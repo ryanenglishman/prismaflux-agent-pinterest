@@ -45,7 +45,10 @@ Reponds en JSON avec cette structure exacte :
   "style": "description courte du style visuel"
 }`;
 
-export async function generateImagePrompt(): Promise<PromptGenerationResult> {
+export async function generateImagePrompt(
+  themeOverride?: string,
+  customInstructions?: string,
+): Promise<PromptGenerationResult> {
   const openai = new OpenAI();
   const today = new Date().toISOString().split("T")[0];
   const dayOfYear = Math.floor(
@@ -53,7 +56,7 @@ export async function generateImagePrompt(): Promise<PromptGenerationResult> {
       86400000,
   );
   const themeIndex = dayOfYear % THEMES.length;
-  const theme = THEMES[themeIndex];
+  const theme = themeOverride || THEMES[themeIndex];
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
@@ -66,7 +69,7 @@ export async function generateImagePrompt(): Promise<PromptGenerationResult> {
 Theme a explorer : "${theme}"
 Seed de variete : ${Date.now()}
 
-Genere un prompt d'image unique et creatif autour de ce theme. Le prompt doit etre different de tout ce qui a pu etre genere avant. Sois inventif dans la composition, l'angle, les elements visuels et les metaphores.`,
+Genere un prompt d'image unique et creatif autour de ce theme. Le prompt doit etre different de tout ce qui a pu etre genere avant. Sois inventif dans la composition, l'angle, les elements visuels et les metaphores.${customInstructions ? `\n\nInstructions supplementaires : ${customInstructions}` : ""}`,
       },
     ],
     temperature: 0.95,

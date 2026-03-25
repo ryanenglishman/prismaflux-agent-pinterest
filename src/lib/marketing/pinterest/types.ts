@@ -25,6 +25,16 @@ export interface LinkedInResult {
   post: string;
 }
 
+export interface PipelineOptions {
+  accessToken: string;
+  boardId: string;
+  theme?: string | null;
+  customInstructions?: string | null;
+  link?: string;
+  dryRun?: boolean;
+  postName?: string;
+}
+
 export interface PipelineResult {
   success: boolean;
   prompt?: PromptGenerationResult;
@@ -33,6 +43,42 @@ export interface PipelineResult {
   pin?: PinterestPinResult;
   error?: string;
   durationMs: number;
+  postName?: string;
+}
+
+export interface PinterestTokens {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: number;
+  refreshExpiresAt: number;
+  scope: string;
+  username?: string;
+}
+
+export interface ScheduledPost {
+  id: string;
+  name: string;
+  boardId: string;
+  boardName: string;
+  cronExpression: string;
+  timezone: string;
+  enabled: boolean;
+  theme: string | null;
+  customInstructions: string | null;
+  link: string;
+  lastRunAt: string | null;
+  lastRunStatus: "success" | "error" | null;
+  lastRunError: string | null;
+  lastPinId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PinterestBoard {
+  id: string;
+  name: string;
+  description: string;
+  pinCount: number;
 }
 
 export interface PinterestCreatePinPayload {

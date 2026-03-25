@@ -4,16 +4,12 @@ const PINTEREST_API_BASE = "https://api.pinterest.com/v5";
 
 export async function createPin(
   payload: PinterestCreatePinPayload,
+  accessToken: string,
 ): Promise<PinterestPinResult> {
-  const token = process.env.PINTEREST_ACCESS_TOKEN;
-  if (!token) {
-    throw new Error("PINTEREST_ACCESS_TOKEN manquant");
-  }
-
   const response = await fetch(`${PINTEREST_API_BASE}/pins`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
@@ -23,7 +19,7 @@ export async function createPin(
     const errorBody = await response.text();
     if (response.status === 401) {
       throw new Error(
-        `Pinterest: token expire ou invalide. Regenerez votre access token. (${errorBody})`,
+        `Pinterest: token expire ou invalide. Reconnectez votre compte. (${errorBody})`,
       );
     }
     if (response.status === 429) {
@@ -42,6 +38,30 @@ export async function createPin(
     pinId: data.id,
     createdAt: data.created_at,
   };
+}
+
+export async function fetchBoards(
+  accessToken: string,
+): Promise<Array<{ id: string; name: string; description: string; pin_count: number }>> {
+  const response = await fetch(`${PINTEREST_API_BASE}/boards`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Pinterest API ${response.status}: ${body}`);
+  }
+
+  const data = (await response.json()) as {
+    items: Array<{
+      id: string;
+      name: string;
+      description: string;
+      pin_count: number;
+    }>;
+  };
+
+  return data.items;
 }
 
 export function buildPinPayload(

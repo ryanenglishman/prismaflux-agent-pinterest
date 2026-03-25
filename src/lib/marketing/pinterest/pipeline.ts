@@ -4,37 +4,28 @@ import { generatePinterestContent } from "./content-generator";
 import { generateLinkedInContent } from "./linkedin-generator";
 import { createPin, buildPinPayload } from "./pinterest-client";
 import { sendNotification } from "./notifier";
-import type { PipelineResult } from "./types";
+import type { PipelineOptions, PipelineResult } from "./types";
 
-export async function runPinterestPipeline(): Promise<PipelineResult> {
+export async function runPinterestPipeline(
+  options: PipelineOptions,
+): Promise<PipelineResult> {
   const start = Date.now();
 
-  const boardId = process.env.PINTEREST_BOARD_ID;
-  if (!boardId) {
-    return {
-      success: false,
-      error: "PINTEREST_BOARD_ID manquant",
-      durationMs: Date.now() - start,
-    };
-  }
   if (!process.env.OPENAI_API_KEY) {
     return {
       success: false,
       error: "OPENAI_API_KEY manquant",
       durationMs: Date.now() - start,
-    };
-  }
-  if (!process.env.PINTEREST_ACCESS_TOKEN) {
-    return {
-      success: false,
-      error: "PINTEREST_ACCESS_TOKEN manquant",
-      durationMs: Date.now() - start,
+      postName: options.postName,
     };
   }
 
   try {
     // Step 1: Generate a creative image prompt
-    const prompt = await generateImagePrompt();
+    const prompt = await generateImagePrompt(
+      options.theme ?? undefined,
+      options.customInstructions ?? undefined,
+    );
 
     // Step 2+3+4: Generate image, Pinterest content AND LinkedIn in parallel
     const [image, content, linkedin] = await Promise.all([
@@ -43,17 +34,20 @@ export async function runPinterestPipeline(): Promise<PipelineResult> {
       generateLinkedInContent(prompt.imagePrompt, prompt.theme),
     ]);
 
-    // Step 5: Post to Pinterest
-    const payload = buildPinPayload(
-      image.base64Data,
-      image.contentType,
-      content.title,
-      content.description,
-      content.altText,
-      boardId,
-      "https://auto-prismaflux.com",
-    );
-    const pin = await createPin(payload);
+    // Step 5: Post to Pinterest (skip if dry run)
+    let pin = undefined;
+    if (!options.dryRun) {
+      const payload = buildPinPayload(
+        image.base64Data,
+        image.contentType,
+        content.title,
+        content.description,
+        content.altText,
+        options.boardId,
+        options.link || "https://auto-prismaflux.com",
+      );
+      pin = await createPin(payload, options.accessToken);
+    }
 
     const result: PipelineResult = {
       success: true,
@@ -62,18 +56,24 @@ export async function runPinterestPipeline(): Promise<PipelineResult> {
       linkedin,
       pin,
       durationMs: Date.now() - start,
+      postName: options.postName,
     };
 
-    await sendNotification(result);
+    if (!options.dryRun) {
+      await sendNotification(result);
+    }
     return result;
   } catch (err) {
     const result: PipelineResult = {
       success: false,
       error: err instanceof Error ? err.message : String(err),
       durationMs: Date.now() - start,
+      postName: options.postName,
     };
 
-    await sendNotification(result);
+    if (!options.dryRun) {
+      await sendNotification(result);
+    }
     return result;
   }
 }
