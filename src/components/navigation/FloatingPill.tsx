@@ -20,50 +20,58 @@ export default function FloatingPill() {
         style={{ padding: `0 var(--pill-margin) var(--pill-margin)` }}
       >
         <div
-          className="flex items-center gap-1 p-1"
+          className="flex items-center gap-1 p-1.5"
           style={{
-            background: "rgba(20,20,24,0.92)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
+            background: "rgba(16, 16, 20, 0.95)",
+            backdropFilter: "blur(24px)",
+            WebkitBackdropFilter: "blur(24px)",
             borderRadius: "var(--pill-radius)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+            border: "1px solid rgba(255,255,255,0.14)",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset",
           }}
         >
-          {/* Robin side — add vehicle */}
+          {/* Robin — ajouter véhicule */}
           <button
             onClick={openVehicle}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-[16px] transition-all active:scale-95"
-            style={{ background: "rgba(255,107,53,0.15)" }}
+            className="flex items-center gap-2.5 px-4 py-2.5 transition-all active:scale-95"
+            style={{
+              background: "rgba(255,107,53,0.18)",
+              border: "1px solid rgba(255,107,53,0.28)",
+              borderRadius: "14px",
+            }}
             title="Ajouter un véhicule"
           >
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-lg"
-              style={{ background: "rgba(255,107,53,0.25)" }}
+            <span className="text-lg leading-none">🦅</span>
+            <span
+              className="text-sm font-bold leading-none"
+              style={{ color: "#FF8C5A" }}
             >
-              🦅
-            </div>
-            <span className="text-sm font-semibold" style={{ color: "#FF6B35" }}>
               + Véhicule
             </span>
           </button>
 
-          {/* Divider */}
+          {/* Séparateur */}
           <div
-            className="w-px h-6 mx-1"
-            style={{ background: "rgba(255,255,255,0.10)" }}
+            className="w-px h-5 mx-0.5"
+            style={{ background: "rgba(255,255,255,0.12)" }}
           />
 
-          {/* PrismaFlux P — menu */}
+          {/* Menu PrismaFlux P */}
           <button
             onClick={openMenu}
-            className="flex items-center justify-center w-12 h-11 rounded-[16px] transition-all active:scale-95"
-            style={{ background: "rgba(255,23,68,0.12)" }}
+            className="flex items-center justify-center transition-all active:scale-95"
+            style={{
+              width: "48px",
+              height: "44px",
+              background: "rgba(255,23,68,0.15)",
+              border: "1px solid rgba(255,23,68,0.28)",
+              borderRadius: "14px",
+            }}
             title="Menu"
           >
             <span
-              className="text-lg font-black"
-              style={{ color: "var(--color-brand)" }}
+              className="text-base font-black leading-none"
+              style={{ color: "#FF1744" }}
             >
               P
             </span>
