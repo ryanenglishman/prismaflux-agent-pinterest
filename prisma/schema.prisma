@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Vehicle {
+  id                    String         @id @default(cuid())
+  organizationId        String
+  vin                   String?
+  make                  String
+  model                 String
+  modelVersion          String?
+  bodyType              String
+  vehicleType           String         @default("car")
+  offerType             String         @default("used")
+  firstRegistrationDate String?
+  mileage               Int?
+  previousOwners        Int?
+  fuelType              String
+  power                 Int?
+  powerHp               Int?
+  engineSize            Int?
+  transmission          String
+  drivetrain            String?
+  gears                 Int?
+  cylinders             Int?
+  co2Emission           Int?
+  fuelConsumptionCombined Float?
+  fuelConsumptionUrban    Float?
+  fuelConsumptionExtraUrban Float?
+  emissionClass         String?
+  emissionSticker       String?
+  bodyColor             String
+  bodyColorOriginal     String?
+  paintType             String?
+  interiorColor         String?
+  interiorType          String?
+  upholstery            String?
+  seats                 Int?
+  doors                 Int?
+  weight                Int?
+  equipment             String         @default("[]")
+  price                 Float
+  currency              String         @default("EUR")
+  vatRate               Float?
+  netPrice              Float?
+  isNegotiable          Boolean        @default(false)
+  isTaxDeductible       Boolean        @default(false)
+  dealerPrice           Float?
+  description           String?
+  countryOfSale         String?
+  locationPostalCode    String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  photos                VehiclePhoto[]
+  listings              Listing[]
+}
+
+model VehiclePhoto {
+  id               String  @id @default(cuid())
+  vehicleId        String
+  url              String
+  order            Int     @default(0)
+  type             String  @default("exterior")
+  platformImageIds String  @default("{}")
+
+  vehicle          Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+
+model Platform {
+  id          String                @id @default(cuid())
+  slug        String                @unique
+  name        String
+  baseUrl     String?
+  isActive    Boolean               @default(true)
+
+  organizations OrganizationPlatform[]
+  listings      Listing[]
+  healthChecks  PlatformHealthCheck[]
+}
+
+model OrganizationPlatform {
+  id             String   @id @default(cuid())
+  organizationId String
+  platformId     String
+  customerId     String?
+  username       String?
+  password       String?
+  isConnected    Boolean  @default(false)
+  testMode       Boolean  @default(true)
+  config         String   @default("{}")
+  connectedAt    DateTime?
+
+  platform       Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, platformId])
+}
+
+model Listing {
+  id                String   @id @default(cuid())
+  vehicleId         String
+  platformId        String
+  platformListingId String?
+  status            String   @default("draft")
+  lastSyncedAt      DateTime?
+  lastError         String?
+  payload           String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  vehicle           Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  platform          Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@unique([vehicleId, platformId])
+}
+
+model PlatformHealthCheck {
+  id           String   @id @default(cuid())
+  platformId   String
+  organizationId String
+  status       String
+  responseTimeMs Int?
+  errorMessage String?
+  checkedAt    DateTime @default(now())
+
+  platform     Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+}
