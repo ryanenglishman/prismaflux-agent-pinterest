@@ -5,6 +5,7 @@ import { generateImagePrompt } from "@/lib/marketing/pinterest/prompt-generator"
 import { generateImage } from "@/lib/marketing/pinterest/image-generator";
 import { generatePinterestContent } from "@/lib/marketing/pinterest/content-generator";
 import { generateLinkedInContent } from "@/lib/marketing/pinterest/linkedin-generator";
+import { generateSocialExports } from "@/lib/marketing/pinterest/social-export";
 import { generateBatchSchedule } from "@/lib/marketing/pinterest/batch-scheduler";
 import { savePreviews } from "@/lib/kv/previews";
 import { savePrompt } from "@/lib/kv/prompts";
@@ -43,12 +44,18 @@ export async function POST(request: NextRequest) {
         generateLinkedInContent(prompt.imagePrompt, prompt.theme).catch(() => undefined),
       ]);
 
+      // Auto-generate social exports (LinkedIn/Instagram/Facebook)
+      const social = await generateSocialExports(
+        prompt.imagePrompt, prompt.theme, content.title, content.description,
+      ).catch(() => undefined);
+
       const preview: PreviewData = {
         id: `pv_${nanoid(10)}`,
         postId: `batch_${slot.date}`,
         prompt,
         content,
         linkedin,
+        social,
         imageBase64: image.base64Data,
         imageContentType: image.contentType,
         status: "pending",

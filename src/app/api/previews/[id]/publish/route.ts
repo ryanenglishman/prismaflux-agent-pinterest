@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/guard";
 import { getPreview, updatePreviewStatus } from "@/lib/kv/previews";
 import { createPin, buildPinPayload } from "@/lib/marketing/pinterest/pinterest-client";
+import { buildUTMLink } from "@/lib/marketing/pinterest/utm";
 import { savePrompt } from "@/lib/kv/prompts";
 import { nanoid } from "nanoid";
 
@@ -29,7 +30,8 @@ export async function POST(
 
   const body = await request.json().catch(() => ({}));
   const boardIds: string[] = body.boardIds || [body.boardId];
-  const link = body.link || "https://auto-prismaflux.com";
+  const rawLink = body.link || "https://auto-prismaflux.com";
+  const link = buildUTMLink(rawLink, { content: preview.id });
 
   if (!boardIds.length) {
     return NextResponse.json({ error: "Au moins un tableau requis" }, { status: 400 });

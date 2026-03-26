@@ -61,6 +61,7 @@ interface PreviewData {
   prompt: { imagePrompt: string; theme: string; style: string };
   content: { title: string; description: string; altText: string };
   linkedin?: { post: string };
+  social?: SocialExportData;
   imageBase64: string;
   imageContentType: string;
   status: "pending" | "approved" | "rejected" | "published";
@@ -104,6 +105,12 @@ interface TimeSuggestion {
   score: number;
   reason: string;
   source: string;
+}
+
+interface SocialExportData {
+  linkedin: string;
+  instagram: string;
+  facebook: string;
 }
 
 interface SocialExport {
@@ -441,6 +448,41 @@ export default function Dashboard() {
   // Rapid approval mode (calendrier)
   const [rapidMode, setRapidMode] = useState(false);
   const [rapidIndex, setRapidIndex] = useState(0);
+
+  // Platform tabs (Post du jour + PreviewModal)
+  const [platformTab, setPlatformTab] = useState<"pinterest" | "linkedin" | "instagram" | "facebook">("pinterest");
+  const [modalPlatformTab, setModalPlatformTab] = useState<"pinterest" | "linkedin" | "instagram" | "facebook">("pinterest");
+
+  // Auth dropdown
+  const [authDropdownOpen, setAuthDropdownOpen] = useState(false);
+
+  // SEO tips
+  const [seoTipsOpen, setSeoTipsOpen] = useState(false);
+
+  // Platform tab copy state
+  const [platformCopied, setPlatformCopied] = useState<string | null>(null);
+
+  // SEO tips array
+  const SEO_TIPS = useMemo(() => [
+    "Publiez entre 20h-21h pour maximiser l'engagement",
+    "Utilisez 4-5 hashtags pertinents par publication",
+    "Incluez auto-prismaflux.com dans vos descriptions",
+    "Ajoutez des mots-cles automobile et IA dans le titre",
+    "Les images verticales (2:3) performent mieux sur Pinterest",
+    "Redigez des descriptions de 150-300 caracteres",
+    "Variez les themes visuels pour toucher plus d'audience",
+    "Epinglez dans plusieurs tableaux pour plus de visibilite",
+  ], []);
+
+  const todaySeoTips = useMemo(() => {
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+    const start = dayOfYear % SEO_TIPS.length;
+    const tips: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      tips.push(SEO_TIPS[(start + i) % SEO_TIPS.length]);
+    }
+    return tips;
+  }, [SEO_TIPS]);
 
   // -------------------------------------------------------------------------
   // Fetch Auth
@@ -1045,6 +1087,13 @@ export default function Dashboard() {
     });
   }
 
+  function copyPlatformText(text: string, platform: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setPlatformCopied(platform);
+      setTimeout(() => setPlatformCopied(null), 2000);
+    });
+  }
+
   // -------------------------------------------------------------------------
   // Handlers -- Batch
   // -------------------------------------------------------------------------
@@ -1166,6 +1215,11 @@ export default function Dashboard() {
         fontFamily: "system-ui, -apple-system, sans-serif",
       }}
     >
+      <style>{`
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+      `}</style>
+
       {/* Header */}
       <header
         style={{
@@ -1208,6 +1262,100 @@ export default function Dashboard() {
             Publication automatique multi-plateformes
           </p>
         </div>
+
+        {/* Auth indicator in header */}
+        {!authLoading && auth?.connected && (
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <button
+              onClick={() => setAuthDropdownOpen(!authDropdownOpen)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                background: colors.card,
+                border: `1px solid ${colors.border}`,
+                borderRadius: 20,
+                padding: "6px 12px",
+                fontSize: 12,
+                cursor: "pointer",
+                color: colors.text,
+                fontFamily: "inherit",
+              }}
+            >
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: auth.needsReauth ? "#ff4444" : "#22c55e",
+                  display: "inline-block",
+                  flexShrink: 0,
+                  animation: auth.needsReauth ? "none" : "pulse 2s infinite",
+                }}
+              />
+              <span style={{ fontWeight: 600, maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {auth.username || "Connecte"}
+              </span>
+              <span style={{ color: auth.needsReauth ? "#ff4444" : colors.muted, fontSize: 11 }}>
+                {auth.needsReauth ? "Reauth" : `Expire ${auth.daysUntilExpiry}j`}
+              </span>
+            </button>
+            {authDropdownOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 4px)",
+                  right: 0,
+                  background: colors.card,
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: 10,
+                  padding: 8,
+                  zIndex: 100,
+                  minWidth: 160,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
+                  boxShadow: dark ? "0 4px 16px rgba(0,0,0,0.5)" : "0 4px 16px rgba(0,0,0,0.15)",
+                }}
+              >
+                <a
+                  href="/api/auth/pinterest"
+                  onClick={() => setAuthDropdownOpen(false)}
+                  style={{
+                    display: "block",
+                    background: `${colors.accent}22`,
+                    color: colors.accent,
+                    border: `1px solid ${colors.accent}66`,
+                    borderRadius: 6,
+                    padding: "8px 12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    textDecoration: "none",
+                    textAlign: "center",
+                  }}
+                >
+                  Re-connecter
+                </a>
+                <button
+                  onClick={() => { handleLogout(); setAuthDropdownOpen(false); }}
+                  style={{
+                    background: "transparent",
+                    color: colors.muted,
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: 6,
+                    padding: "8px 12px",
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Deconnecter
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Theme toggle */}
         <button
@@ -1274,125 +1422,52 @@ export default function Dashboard() {
           padding: `${padding}px ${isMobile ? 12 : 24}px`,
         }}
       >
-        {/* Auth Section -- always visible */}
-        <section style={{ marginBottom: isMobile ? 16 : 28 }}>
-          <SectionTitle colors={colors}>Connexion Pinterest</SectionTitle>
+        {/* Auth compact banner — only when NOT connected */}
+        {!authLoading && !auth?.connected && (
           <div
             style={{
-              background: colors.card,
-              borderRadius: 12,
-              border: `1px solid ${colors.border}`,
-              padding: isMobile ? "12px 14px" : "16px 20px",
               display: "flex",
               alignItems: "center",
-              gap: isMobile ? 10 : 16,
-              flexWrap: "wrap",
+              gap: 10,
+              background: dark ? "#1c1012" : "#fef2f2",
+              borderRadius: 10,
+              border: "1px solid #ef444444",
+              padding: "10px 16px",
+              marginBottom: isMobile ? 16 : 24,
             }}
           >
-            {authLoading ? (
-              <span style={{ color: colors.muted, fontSize: 14 }}>
-                Chargement...
-              </span>
-            ) : auth?.connected ? (
-              <>
-                <span
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: auth.needsReauth ? "#ff4444" : "#22c55e",
-                    display: "inline-block",
-                    flexShrink: 0,
-                  }}
-                />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>
-                    {auth.username || "Connecte"}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 13,
-                      color: auth.needsReauth ? "#ff4444" : colors.muted,
-                      marginLeft: 12,
-                    }}
-                  >
-                    {auth.needsReauth
-                      ? "Re-authentification requise"
-                      : `Expire dans ${auth.daysUntilExpiry}j`}
-                  </span>
-                </div>
-                {auth.needsReauth && (
-                  <a
-                    href="/api/auth/pinterest"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #e63232, #ff4444)",
-                      color: "#0a0a0f",
-                      border: "none",
-                      borderRadius: 8,
-                      padding: "8px 16px",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      textDecoration: "none",
-                    }}
-                  >
-                    Re-connecter
-                  </a>
-                )}
-                <button
-                  onClick={handleLogout}
-                  style={{
-                    background: "transparent",
-                    color: colors.muted,
-                    border: `1px solid ${colors.border}`,
-                    borderRadius: 8,
-                    padding: "8px 16px",
-                    fontSize: 13,
-                    fontWeight: 500,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  Deconnecter
-                </button>
-              </>
-            ) : (
-              <>
-                <span
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: "#ef4444",
-                    display: "inline-block",
-                    flexShrink: 0,
-                  }}
-                />
-                <span style={{ fontSize: 14, color: colors.muted, flex: 1 }}>
-                  Non connecte a Pinterest
-                </span>
-                <a
-                  href="/api/auth/pinterest"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, #e63232, #ff4444)",
-                    color: "#0a0a0f",
-                    border: "none",
-                    borderRadius: 8,
-                    padding: "8px 20px",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    textDecoration: "none",
-                  }}
-                >
-                  Connecter Pinterest
-                </a>
-              </>
-            )}
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#ef4444",
+                display: "inline-block",
+                flexShrink: 0,
+              }}
+            />
+            <span style={{ fontSize: 13, color: colors.muted, flex: 1 }}>
+              Non connecte
+            </span>
+            <a
+              href="/api/auth/pinterest"
+              style={{
+                background: "linear-gradient(135deg, #e63232, #ff4444)",
+                color: "#0a0a0f",
+                border: "none",
+                borderRadius: 8,
+                padding: "7px 16px",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                textDecoration: "none",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Connecter Pinterest
+            </a>
           </div>
-        </section>
+        )}
 
         {/* ================================================================= */}
         {/* KPI Dashboard (always visible above tabs)                         */}
@@ -1475,6 +1550,52 @@ export default function Dashboard() {
         </section>
 
         {/* ================================================================= */}
+        {/* SEO Tips (collapsible)                                             */}
+        {/* ================================================================= */}
+        <section style={{ marginBottom: isMobile ? 16 : 24 }}>
+          <button
+            onClick={() => setSeoTipsOpen(!seoTipsOpen)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              background: "transparent",
+              border: "none",
+              color: colors.accent,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              padding: 0,
+              fontFamily: "inherit",
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+              marginBottom: seoTipsOpen ? 8 : 0,
+            }}
+          >
+            Conseils SEO {seoTipsOpen ? "\u25B2" : "\u25BC"}
+          </button>
+          {seoTipsOpen && (
+            <div
+              style={{
+                background: dark ? "#1a1800" : "#fffde6",
+                borderRadius: 12,
+                border: `2px solid ${colors.accent}66`,
+                padding: isMobile ? "12px 14px" : "14px 20px",
+                animation: "fadeIn 0.3s ease",
+              }}
+            >
+              <ul style={{ margin: 0, padding: "0 0 0 18px", listStyle: "disc" }}>
+                {todaySeoTips.map((tip, i) => (
+                  <li key={i} style={{ fontSize: 13, color: colors.text, lineHeight: 1.8 }}>
+                    {tip}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+
+        {/* ================================================================= */}
         {/* IA Suggestion Banner                                               */}
         {/* ================================================================= */}
         {suggestion && (
@@ -1539,15 +1660,17 @@ export default function Dashboard() {
               style={{
                 background: dark ? "#111113" : "#fefce8",
                 borderRadius: 12,
-                border: `1px solid ${colors.accent}44`,
+                border: todayPreview ? `2px solid ${colors.accent}66` : `1px solid ${colors.accent}44`,
                 padding: isMobile ? "14px" : "16px 20px",
                 marginBottom: isMobile ? 16 : 20,
+                animation: todayPreview ? "pulse 1.5s infinite" : "none",
               }}
             >
               <SectionTitle colors={colors} style={{ marginBottom: 10 }}>
                 Post du jour
               </SectionTitle>
               {todayPreview ? (
+                <>
                 <div
                   style={{
                     display: "flex",
@@ -1659,6 +1782,86 @@ export default function Dashboard() {
                     </div>
                   </div>
                 </div>
+                {/* Platform tabs */}
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ display: "flex", gap: 0, borderBottom: `1px solid ${colors.border}`, marginBottom: 10 }}>
+                    {(["pinterest", "linkedin", "instagram", "facebook"] as const).map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setPlatformTab(p)}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          borderBottom: platformTab === p ? `2px solid ${colors.accent}` : "2px solid transparent",
+                          color: platformTab === p ? colors.accent : colors.muted,
+                          padding: "8px 14px",
+                          fontSize: 12,
+                          fontWeight: platformTab === p ? 600 : 500,
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          textTransform: "capitalize",
+                        }}
+                      >
+                        {p === "pinterest" ? "Pinterest" : p === "linkedin" ? "LinkedIn" : p === "instagram" ? "Instagram" : "Facebook"}
+                      </button>
+                    ))}
+                  </div>
+                  <div
+                    style={{
+                      background: colors.bg,
+                      borderRadius: 8,
+                      border: `1px solid ${colors.border}`,
+                      padding: 12,
+                      animation: "fadeIn 0.3s ease",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: 13,
+                        margin: 0,
+                        color: colors.text,
+                        lineHeight: 1.5,
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      {platformTab === "pinterest"
+                        ? todayPreview.content.description || "Non genere"
+                        : platformTab === "linkedin"
+                          ? todayPreview.social?.linkedin || "Non genere"
+                          : platformTab === "instagram"
+                            ? todayPreview.social?.instagram || "Non genere"
+                            : todayPreview.social?.facebook || "Non genere"}
+                    </p>
+                    <button
+                      onClick={() =>
+                        copyPlatformText(
+                          platformTab === "pinterest"
+                            ? todayPreview.content.description || ""
+                            : platformTab === "linkedin"
+                              ? todayPreview.social?.linkedin || ""
+                              : platformTab === "instagram"
+                                ? todayPreview.social?.instagram || ""
+                                : todayPreview.social?.facebook || "",
+                          `today-${platformTab}`,
+                        )
+                      }
+                      style={{
+                        marginTop: 8,
+                        background: "transparent",
+                        border: `1px solid ${colors.border}`,
+                        borderRadius: 6,
+                        padding: "5px 12px",
+                        fontSize: 11,
+                        cursor: "pointer",
+                        color: platformCopied === `today-${platformTab}` ? "#22c55e" : colors.muted,
+                        fontFamily: "inherit",
+                      }}
+                    >
+                      {platformCopied === `today-${platformTab}` ? "Copie !" : "Copier"}
+                    </button>
+                  </div>
+                </div>
+                </>
               ) : (
                 <div
                   style={{
@@ -2875,11 +3078,6 @@ export default function Dashboard() {
           colors={colors}
           dark={dark}
           isMobile={isMobile}
-          onExport={handleExport}
-          exportLoading={exportLoading}
-          exportData={exportData}
-          exportCopied={exportCopied}
-          onCopyExport={copyToClipboard}
         />
       )}
     </div>
@@ -3090,6 +3288,7 @@ function PostCard({
         padding: isMobile ? "12px 14px" : "16px 20px",
         opacity: post.enabled ? 1 : 0.7,
         transition: "opacity 0.2s",
+        animation: "fadeIn 0.3s ease",
       }}
     >
       {/* Top row */}
@@ -3569,11 +3768,6 @@ function PreviewModal({
   colors,
   dark,
   isMobile,
-  onExport,
-  exportLoading,
-  exportData,
-  exportCopied,
-  onCopyExport,
 }: {
   preview: PreviewData;
   variants: PreviewData[];
@@ -3587,13 +3781,29 @@ function PreviewModal({
   colors: ThemeColors;
   dark: boolean;
   isMobile: boolean;
-  onExport: (preview: PreviewData) => void;
-  exportLoading: boolean;
-  exportData: SocialExport | null;
-  exportCopied: string | null;
-  onCopyExport: (text: string, platform: string) => void;
 }) {
   const current = variants[activeVariant] || preview;
+
+  // Internal platform tabs state
+  const [mPlatformTab, setMPlatformTab] = useState<"pinterest" | "linkedin" | "instagram" | "facebook">("pinterest");
+  const [mCopied, setMCopied] = useState<string | null>(null);
+
+  function mCopy(text: string, key: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setMCopied(key);
+      setTimeout(() => setMCopied(null), 2000);
+    });
+  }
+
+  // SEO score computation
+  const seoScore = useMemo(() => {
+    const desc = (current.content.description || "").toLowerCase();
+    const keywords = ["prismaflux", "automobile", "ia", "concession", "auto-prismaflux.com"];
+    let keywordCount = 0;
+    keywords.forEach((kw) => { if (desc.includes(kw)) keywordCount++; });
+    const hashtagCount = (desc.match(/#\w+/g) || []).length;
+    return Math.min(100, keywordCount * 20 + hashtagCount * 10);
+  }, [current.content.description]);
 
   return (
     <div
@@ -3761,17 +3971,30 @@ function PreviewModal({
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <p
-              style={{
-                fontSize: 12,
-                color: colors.muted,
-                margin: 0,
-                marginBottom: 4,
-                fontWeight: 600,
-              }}
-            >
-              Description Pinterest
-            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <p
+                style={{
+                  fontSize: 12,
+                  color: colors.muted,
+                  margin: 0,
+                  fontWeight: 600,
+                }}
+              >
+                Description Pinterest
+              </p>
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: seoScore >= 60 ? "#22c55e" : seoScore >= 30 ? "#eab308" : "#ef4444",
+                  background: `${seoScore >= 60 ? "#22c55e" : seoScore >= 30 ? "#eab308" : "#ef4444"}22`,
+                  padding: "2px 8px",
+                  borderRadius: 4,
+                }}
+              >
+                SEO {seoScore}/100
+              </span>
+            </div>
             <p
               style={{
                 fontSize: 14,
@@ -3781,46 +4004,88 @@ function PreviewModal({
                 whiteSpace: "pre-wrap",
               }}
             >
-              {current.content.description || "—"}
+              {current.content.description || "\u2014"}
             </p>
           </div>
 
-          {/* LinkedIn */}
-          {current.linkedin?.post && (
-            <div style={{ marginBottom: 16 }}>
-              <p
-                style={{
-                  fontSize: 12,
-                  color: colors.muted,
-                  margin: 0,
-                  marginBottom: 4,
-                  fontWeight: 600,
-                }}
-              >
-                Post LinkedIn
-              </p>
-              <div
-                style={{
-                  background: colors.bg,
-                  borderRadius: 8,
-                  border: `1px solid ${colors.border}`,
-                  padding: 12,
-                }}
-              >
-                <p
+          {/* Platform tabs */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: "flex", gap: 0, borderBottom: `1px solid ${colors.border}`, marginBottom: 10 }}>
+              {(["pinterest", "linkedin", "instagram", "facebook"] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setMPlatformTab(p)}
                   style={{
-                    fontSize: 13,
-                    margin: 0,
-                    color: colors.text,
-                    lineHeight: 1.5,
-                    whiteSpace: "pre-wrap",
+                    background: "transparent",
+                    border: "none",
+                    borderBottom: mPlatformTab === p ? `2px solid ${colors.accent}` : "2px solid transparent",
+                    color: mPlatformTab === p ? colors.accent : colors.muted,
+                    padding: "8px 14px",
+                    fontSize: 12,
+                    fontWeight: mPlatformTab === p ? 600 : 500,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
                   }}
                 >
-                  {current.linkedin.post}
-                </p>
-              </div>
+                  {p === "pinterest" ? "Pinterest" : p === "linkedin" ? "LinkedIn" : p === "instagram" ? "Instagram" : "Facebook"}
+                </button>
+              ))}
             </div>
-          )}
+            <div
+              style={{
+                background: colors.bg,
+                borderRadius: 8,
+                border: `1px solid ${colors.border}`,
+                padding: 12,
+                animation: "fadeIn 0.3s ease",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: 13,
+                  margin: 0,
+                  color: colors.text,
+                  lineHeight: 1.5,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {mPlatformTab === "pinterest"
+                  ? current.content.description || "Non genere"
+                  : mPlatformTab === "linkedin"
+                    ? current.social?.linkedin || current.linkedin?.post || "Non genere"
+                    : mPlatformTab === "instagram"
+                      ? current.social?.instagram || "Non genere"
+                      : current.social?.facebook || "Non genere"}
+              </p>
+              <button
+                onClick={() =>
+                  mCopy(
+                    mPlatformTab === "pinterest"
+                      ? current.content.description || ""
+                      : mPlatformTab === "linkedin"
+                        ? current.social?.linkedin || current.linkedin?.post || ""
+                        : mPlatformTab === "instagram"
+                          ? current.social?.instagram || ""
+                          : current.social?.facebook || "",
+                    `modal-${mPlatformTab}`,
+                  )
+                }
+                style={{
+                  marginTop: 8,
+                  background: "transparent",
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: 6,
+                  padding: "5px 12px",
+                  fontSize: 11,
+                  cursor: "pointer",
+                  color: mCopied === `modal-${mPlatformTab}` ? "#22c55e" : colors.muted,
+                  fontFamily: "inherit",
+                }}
+              >
+                {mCopied === `modal-${mPlatformTab}` ? "Copie !" : "Copier"}
+              </button>
+            </div>
+          </div>
 
           {/* Prompt info */}
           {current.prompt && (
@@ -3881,170 +4146,6 @@ function PreviewModal({
               a {padTime(current.scheduledHour)}:
               {padTime(current.scheduledMinute)}
             </p>
-          </div>
-
-          {/* =========== Export multi-plateforme =========== */}
-          <div
-            style={{
-              borderTop: `1px solid ${colors.border}`,
-              paddingTop: 16,
-              marginBottom: 16,
-            }}
-          >
-            <p
-              style={{
-                fontSize: 12,
-                color: colors.muted,
-                margin: 0,
-                marginBottom: 10,
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-              }}
-            >
-              Exporter multi-plateforme
-            </p>
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-                marginBottom: exportData ? 12 : 0,
-              }}
-            >
-              <button
-                onClick={() => onExport(current)}
-                disabled={exportLoading}
-                style={{
-                  background: "#0077b5",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "8px 16px",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: exportLoading ? "not-allowed" : "pointer",
-                  fontFamily: "inherit",
-                  opacity: exportLoading ? 0.6 : 1,
-                }}
-              >
-                {exportLoading ? "..." : "LinkedIn"}
-              </button>
-              <button
-                onClick={() => onExport(current)}
-                disabled={exportLoading}
-                style={{
-                  background:
-                    "linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "8px 16px",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: exportLoading ? "not-allowed" : "pointer",
-                  fontFamily: "inherit",
-                  opacity: exportLoading ? 0.6 : 1,
-                }}
-              >
-                {exportLoading ? "..." : "Instagram"}
-              </button>
-              <button
-                onClick={() => onExport(current)}
-                disabled={exportLoading}
-                style={{
-                  background: "#1877f2",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "8px 16px",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: exportLoading ? "not-allowed" : "pointer",
-                  fontFamily: "inherit",
-                  opacity: exportLoading ? 0.6 : 1,
-                }}
-              >
-                {exportLoading ? "..." : "Facebook"}
-              </button>
-            </div>
-
-            {/* Export results */}
-            {exportData && (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 10,
-                }}
-              >
-                {(
-                  [
-                    ["linkedin", "LinkedIn", exportData.linkedin],
-                    ["instagram", "Instagram", exportData.instagram],
-                    ["facebook", "Facebook", exportData.facebook],
-                  ] as [string, string, string][]
-                ).map(([key, label, text]) =>
-                  text ? (
-                    <div key={key}>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: 4,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: colors.muted,
-                          }}
-                        >
-                          {label}
-                        </span>
-                        <button
-                          onClick={() => onCopyExport(text, key)}
-                          style={{
-                            background: "transparent",
-                            border: `1px solid ${colors.border}`,
-                            borderRadius: 6,
-                            padding: "4px 10px",
-                            fontSize: 11,
-                            cursor: "pointer",
-                            color:
-                              exportCopied === key
-                                ? "#22c55e"
-                                : colors.muted,
-                            fontFamily: "inherit",
-                          }}
-                        >
-                          {exportCopied === key ? "Copie !" : "Copier"}
-                        </button>
-                      </div>
-                      <textarea
-                        readOnly
-                        value={text}
-                        rows={4}
-                        style={{
-                          width: "100%",
-                          background: colors.bg,
-                          color: colors.text,
-                          border: `1px solid ${colors.border}`,
-                          borderRadius: 8,
-                          padding: "8px 10px",
-                          fontSize: 12,
-                          fontFamily: "inherit",
-                          resize: "vertical",
-                          boxSizing: "border-box",
-                        }}
-                      />
-                    </div>
-                  ) : null,
-                )}
-              </div>
-            )}
           </div>
 
           {/* Action buttons */}

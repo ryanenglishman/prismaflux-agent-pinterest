@@ -36,14 +36,22 @@ export interface PipelineOptions {
   postName?: string;
 }
 
+export interface SocialExport {
+  linkedin: string;
+  instagram: string;
+  facebook: string;
+}
+
 export interface PipelineResult {
   success: boolean;
   prompt?: PromptGenerationResult;
   content?: PinterestContent;
   linkedin?: LinkedInResult;
+  social?: SocialExport;
   pin?: PinterestPinResult;
   pins?: PinterestPinResult[];
   imageBase64?: string;
+  trackedLink?: string;
   error?: string;
   durationMs: number;
   postName?: string;
@@ -109,6 +117,7 @@ export interface PreviewData {
   prompt: PromptGenerationResult;
   content: PinterestContent;
   linkedin?: LinkedInResult;
+  social?: SocialExport;
   imageBase64: string;
   imageContentType: "image/png" | "image/jpeg" | "image/webp";
   status: "pending" | "approved" | "rejected" | "published";
