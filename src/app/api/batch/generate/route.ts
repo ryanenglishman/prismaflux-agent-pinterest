@@ -7,6 +7,7 @@ import { generatePinterestContent } from "@/lib/marketing/pinterest/content-gene
 import { generateLinkedInContent } from "@/lib/marketing/pinterest/linkedin-generator";
 import { generateBatchSchedule } from "@/lib/marketing/pinterest/batch-scheduler";
 import { savePreviews } from "@/lib/kv/previews";
+import { savePrompt } from "@/lib/kv/prompts";
 import type { PreviewData, BatchConfig } from "@/lib/marketing/pinterest/types";
 
 export const maxDuration = 300;
@@ -63,8 +64,40 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Assign variantIndex/variantTotal for same-day previews
+  const dayGroups: Record<string, PreviewData[]> = {};
+  for (const p of previews) {
+    const key = p.scheduledFor;
+    if (!dayGroups[key]) dayGroups[key] = [];
+    dayGroups[key].push(p);
+  }
+  for (const group of Object.values(dayGroups)) {
+    if (group.length > 1) {
+      for (let i = 0; i < group.length; i++) {
+        group[i].variantIndex = i;
+        group[i].variantTotal = group.length;
+      }
+    }
+  }
+
   if (previews.length > 0) {
     await savePreviews(previews);
+
+    // Auto-save all generated prompts to library
+    for (const p of previews) {
+      await savePrompt({
+        id: `pr_${nanoid(10)}`,
+        imagePrompt: p.prompt.imagePrompt,
+        theme: p.prompt.theme,
+        style: p.prompt.style,
+        title: p.content.title,
+        description: p.content.description,
+        performance: "unknown",
+        usedCount: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
   }
 
   return NextResponse.json({

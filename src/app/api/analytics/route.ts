@@ -59,9 +59,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       pinId,
-      period: { startDate, endDate },
-      totals: { impressions, saves, clicks, outboundClicks },
-      daily,
+      impressions,
+      saves,
+      clicks,
+      outboundClicks,
+      comments: 0,
+      date: endDate,
     });
   } catch (err) {
     return NextResponse.json({

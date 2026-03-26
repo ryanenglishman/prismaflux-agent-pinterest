@@ -30,9 +30,13 @@ export async function POST(request: NextRequest) {
 
   const body = (await request.json()) as Partial<ScheduledPost>;
 
-  if (!body.name?.trim() || !body.boardId?.trim() || !body.boardName?.trim()) {
+  // Accept either multi-board (boardIds[]) or single board (boardId)
+  const boardIds = body.boardIds?.length ? body.boardIds : body.boardId ? [body.boardId.trim()] : [];
+  const boardNames = body.boardNames?.length ? body.boardNames : body.boardName ? [body.boardName.trim()] : [];
+
+  if (!body.name?.trim() || boardIds.length === 0) {
     return NextResponse.json(
-      { error: "Champs requis: name, boardId, boardName" },
+      { error: "Champs requis: name, au moins un tableau" },
       { status: 400 },
     );
   }
@@ -48,8 +52,10 @@ export async function POST(request: NextRequest) {
   const post: ScheduledPost = {
     id: `sp_${nanoid(10)}`,
     name,
-    boardId: body.boardId.trim(),
-    boardName: body.boardName.trim(),
+    boardId: boardIds[0],
+    boardName: boardNames[0] || "",
+    boardIds,
+    boardNames,
     cronExpression: body.cronExpression || "0 16 * * *",
     timezone: body.timezone || "Europe/Brussels",
     enabled: body.enabled ?? true,

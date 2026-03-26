@@ -39,12 +39,18 @@ export async function PUT(
 
   const body = (await request.json()) as Partial<ScheduledPost>;
 
+  // Handle multi-board arrays
+  const boardIds = body.boardIds?.length ? body.boardIds : existing.boardIds;
+  const boardNames = body.boardNames?.length ? body.boardNames : existing.boardNames;
+
   // Sanitize inputs
   const updated: ScheduledPost = {
     ...existing,
     name: body.name?.trim().slice(0, 100) ?? existing.name,
-    boardId: body.boardId?.trim() ?? existing.boardId,
-    boardName: body.boardName?.trim() ?? existing.boardName,
+    boardId: boardIds?.[0] ?? body.boardId?.trim() ?? existing.boardId,
+    boardName: boardNames?.[0] ?? body.boardName?.trim() ?? existing.boardName,
+    boardIds: boardIds ?? existing.boardIds,
+    boardNames: boardNames ?? existing.boardNames,
     cronExpression: body.cronExpression ?? existing.cronExpression,
     timezone: body.timezone ?? existing.timezone,
     enabled: body.enabled ?? existing.enabled,
