@@ -98,6 +98,31 @@ interface PinAnalytics {
   date: string;
 }
 
+interface TimeSuggestion {
+  hour: number;
+  minute: number;
+  score: number;
+  reason: string;
+  source: string;
+}
+
+interface SocialExport {
+  linkedin: string;
+  instagram: string;
+  facebook: string;
+}
+
+interface PostForm {
+  name: string;
+  boardIds: string[];
+  boardNames: string[];
+  cronExpression: string;
+  theme: string;
+  customInstructions: string;
+  link: string;
+  promptStyle: string;
+}
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -119,6 +144,17 @@ const THEMES = [
   "Gestion intelligente du stock et acceleration de la rotation vehicules",
 ];
 
+const PROMPT_STYLES = [
+  "PrismaFlux",
+  "Storytelling",
+  "Expert",
+  "Humour",
+  "Urgence/FOMO",
+  "Inspirant",
+  "Educatif",
+  "Provoquant/Challenger",
+];
+
 const SCHEDULE_OPTIONS = [
   { label: "Tous les jours a 10h", value: "0 8 * * *" },
   { label: "Tous les jours a 12h", value: "0 10 * * *" },
@@ -137,22 +173,22 @@ const TAB_LIST = [
   { key: "publications", label: "Publications" },
   { key: "calendrier", label: "Calendrier" },
   { key: "prompts", label: "Prompts" },
+  { key: "perdus", label: "Perdus" },
   { key: "test", label: "Test" },
 ] as const;
 
 type TabKey = (typeof TAB_LIST)[number]["key"];
 
 const DAYS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-
-interface PostForm {
-  name: string;
-  boardIds: string[];
-  boardNames: string[];
-  cronExpression: string;
-  theme: string;
-  customInstructions: string;
-  link: string;
-}
+const DAYS_FR_FULL = [
+  "dimanche",
+  "lundi",
+  "mardi",
+  "mercredi",
+  "jeudi",
+  "vendredi",
+  "samedi",
+];
 
 const EMPTY_FORM: PostForm = {
   name: "",
@@ -162,6 +198,38 @@ const EMPTY_FORM: PostForm = {
   theme: "",
   customInstructions: "",
   link: "https://auto-prismaflux.com",
+  promptStyle: "PrismaFlux",
+};
+
+// ---------------------------------------------------------------------------
+// Theme Colors
+// ---------------------------------------------------------------------------
+
+interface ThemeColors {
+  bg: string;
+  card: string;
+  border: string;
+  text: string;
+  muted: string;
+  accent: string;
+}
+
+const DARK_COLORS: ThemeColors = {
+  bg: "#0a0a0f",
+  card: "#18181b",
+  border: "#27272a",
+  text: "#e4e4e7",
+  muted: "#71717a",
+  accent: "#eab308",
+};
+
+const LIGHT_COLORS: ThemeColors = {
+  bg: "#f4f4f5",
+  card: "#ffffff",
+  border: "#e4e4e7",
+  text: "#18181b",
+  muted: "#a1a1aa",
+  accent: "#eab308",
 };
 
 // ---------------------------------------------------------------------------
@@ -217,6 +285,17 @@ function padTime(n: number): string {
   return n.toString().padStart(2, "0");
 }
 
+function timeUntil(iso: string): string {
+  const diff = new Date(iso).getTime() - Date.now();
+  if (diff <= 0) return "imminent";
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `${days}j`;
+}
+
 const statusColors: Record<string, string> = {
   pending: "#eab308",
   approved: "#22c55e",
@@ -246,10 +325,35 @@ const perfLabels: Record<string, string> = {
 };
 
 // ---------------------------------------------------------------------------
+// Hook: useIsMobile
+// ---------------------------------------------------------------------------
+
+function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    function check() {
+      setIsMobile(window.innerWidth < 768);
+    }
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  return isMobile;
+}
+
+// ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 
 export default function Dashboard() {
+  const isMobile = useIsMobile();
+
+  // Theme
+  const [dark, setDark] = useState(true);
+  const colors = dark ? DARK_COLORS : LIGHT_COLORS;
+
   // Tab
   const [activeTab, setActiveTab] = useState<TabKey>("publications");
 
@@ -322,6 +426,21 @@ export default function Dashboard() {
 
   // Calendar week offset (0 = this week, 1 = next week)
   const [calendarWeekOffset, setCalendarWeekOffset] = useState(0);
+
+  // KPI expanded
+  const [kpiExpanded, setKpiExpanded] = useState(false);
+
+  // Suggestion banner
+  const [suggestion, setSuggestion] = useState<string | null>(null);
+
+  // Export modal
+  const [exportData, setExportData] = useState<SocialExport | null>(null);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportCopied, setExportCopied] = useState<string | null>(null);
+
+  // Rapid approval mode (calendrier)
+  const [rapidMode, setRapidMode] = useState(false);
+  const [rapidIndex, setRapidIndex] = useState(0);
 
   // -------------------------------------------------------------------------
   // Fetch Auth
@@ -436,13 +555,43 @@ export default function Dashboard() {
   );
 
   // -------------------------------------------------------------------------
+  // Fetch Suggestion
+  // -------------------------------------------------------------------------
+
+  const fetchSuggestion = useCallback(async () => {
+    try {
+      const day = new Date().getDay();
+      const res = await fetch(`/api/suggestions?day=${day}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.recommendation) {
+          const dayName = DAYS_FR_FULL[new Date().getDay()];
+          const rec = data.recommendation;
+          const best = data.suggestions?.[0] as TimeSuggestion | undefined;
+          if (best) {
+            setSuggestion(
+              `Creneau recommande pour ${dayName} : ${padTime(best.hour)}h${padTime(best.minute)} (score ${best.score}/100). ${rec}`,
+            );
+          } else {
+            setSuggestion(rec);
+          }
+        }
+      }
+    } catch {
+      /* silent */
+    }
+  }, []);
+
+  // -------------------------------------------------------------------------
   // Mount
   // -------------------------------------------------------------------------
 
   useEffect(() => {
     fetchAuth();
     fetchPosts();
-  }, [fetchAuth, fetchPosts]);
+    fetchPreviews();
+    fetchSuggestion();
+  }, [fetchAuth, fetchPosts, fetchPreviews, fetchSuggestion]);
 
   // Fetch boards when form opens and connected
   useEffect(() => {
@@ -458,6 +607,9 @@ export default function Dashboard() {
     }
     if (activeTab === "prompts") {
       fetchPrompts();
+    }
+    if (activeTab === "perdus") {
+      fetchPreviews();
     }
   }, [activeTab, fetchPreviews, fetchPrompts]);
 
@@ -478,7 +630,85 @@ export default function Dashboard() {
   }, [posts, analyticsCache, fetchAnalytics]);
 
   // -------------------------------------------------------------------------
-  // Handlers — Posts
+  // KPI Computed
+  // -------------------------------------------------------------------------
+
+  const kpiData = useMemo(() => {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    const day = startOfWeek.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    startOfWeek.setDate(startOfWeek.getDate() - diff);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const postsThisWeek = posts.filter((p) => {
+      if (!p.lastRunAt) return false;
+      return new Date(p.lastRunAt) >= startOfWeek;
+    }).length;
+
+    const totalWithRun = posts.filter((p) => p.lastRunStatus !== null).length;
+    const successCount = posts.filter(
+      (p) => p.lastRunStatus === "success",
+    ).length;
+    const successRate =
+      totalWithRun > 0 ? Math.round((successCount / totalWithRun) * 100) : 0;
+
+    // Next scheduled post: find earliest approved preview in the future
+    const futurePreviews = previews
+      .filter(
+        (p) =>
+          (p.status === "approved" || p.status === "pending") &&
+          new Date(p.scheduledFor).getTime() > Date.now(),
+      )
+      .sort(
+        (a, b) =>
+          new Date(a.scheduledFor).getTime() -
+          new Date(b.scheduledFor).getTime(),
+      );
+    const nextPost = futurePreviews[0] || null;
+
+    const pendingCount = previews.filter(
+      (p) => p.status === "pending",
+    ).length;
+
+    return { postsThisWeek, successRate, nextPost, pendingCount };
+  }, [posts, previews]);
+
+  // -------------------------------------------------------------------------
+  // "Post du jour" — today's pending preview
+  // -------------------------------------------------------------------------
+
+  const todayPreview = useMemo(() => {
+    const today = new Date();
+    return (
+      previews.find(
+        (p) =>
+          p.status === "pending" &&
+          isSameDay(new Date(p.scheduledFor), today),
+      ) || null
+    );
+  }, [previews]);
+
+  // -------------------------------------------------------------------------
+  // Rejected previews (Perdus tab)
+  // -------------------------------------------------------------------------
+
+  const rejectedPreviews = useMemo(
+    () => previews.filter((p) => p.status === "rejected"),
+    [previews],
+  );
+
+  // -------------------------------------------------------------------------
+  // Rapid mode previews (pending/approved in calendar range)
+  // -------------------------------------------------------------------------
+
+  const rapidPreviews = useMemo(
+    () => previews.filter((p) => p.status === "pending"),
+    [previews],
+  );
+
+  // -------------------------------------------------------------------------
+  // Handlers -- Posts
   // -------------------------------------------------------------------------
 
   function openCreateForm() {
@@ -498,6 +728,7 @@ export default function Dashboard() {
       theme: post.theme || "",
       customInstructions: post.customInstructions || "",
       link: post.link,
+      promptStyle: "PrismaFlux",
     });
     setFormError(null);
     setFormOpen(true);
@@ -550,6 +781,7 @@ export default function Dashboard() {
         theme: form.theme || null,
         customInstructions: form.customInstructions.trim() || null,
         link: form.link.trim() || "https://auto-prismaflux.com",
+        promptStyle: form.promptStyle,
       };
 
       let res: Response;
@@ -615,7 +847,6 @@ export default function Dashboard() {
       const data = await res.json();
       setRunResult({ postId: id, result: data });
       await fetchPosts();
-      // If result has imageBase64 open a preview-like view
       if (data.success && data.imageBase64) {
         const syntheticPreview: PreviewData = {
           id: "run-result-" + id,
@@ -687,12 +918,11 @@ export default function Dashboard() {
   }
 
   // -------------------------------------------------------------------------
-  // Handlers — Previews
+  // Handlers -- Previews
   // -------------------------------------------------------------------------
 
   function openPreviewModal(preview: PreviewData) {
     setPreviewModalData(preview);
-    // Find variants for the same slot
     const variants = previews.filter(
       (p) =>
         p.postId === preview.postId &&
@@ -707,12 +937,14 @@ export default function Dashboard() {
       setPreviewModalVariants([preview]);
       setPreviewVariantTab(0);
     }
+    setExportData(null);
   }
 
   function closePreviewModal() {
     setPreviewModalData(null);
     setPreviewModalVariants([]);
     setPreviewVariantTab(0);
+    setExportData(null);
   }
 
   async function approvePreview(id: string) {
@@ -724,7 +956,6 @@ export default function Dashboard() {
         body: JSON.stringify({ status: "approved" }),
       });
       await fetchPreviews();
-      // Update modal data
       setPreviewModalData((prev) =>
         prev && prev.id === id ? { ...prev, status: "approved" } : prev,
       );
@@ -766,8 +997,56 @@ export default function Dashboard() {
     setPreviewActionLoading(false);
   }
 
+  async function reusePreview(id: string) {
+    try {
+      await fetch(`/api/previews/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "pending" }),
+      });
+      await fetchPreviews();
+    } catch {
+      /* silent */
+    }
+  }
+
   // -------------------------------------------------------------------------
-  // Handlers — Batch
+  // Handlers -- Export
+  // -------------------------------------------------------------------------
+
+  async function handleExport(preview: PreviewData) {
+    setExportLoading(true);
+    setExportData(null);
+    try {
+      const res = await fetch("/api/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imagePrompt: preview.prompt.imagePrompt,
+          theme: preview.prompt.theme,
+          title: preview.content.title,
+          description: preview.content.description,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setExportData(data);
+      }
+    } catch {
+      /* silent */
+    }
+    setExportLoading(false);
+  }
+
+  function copyToClipboard(text: string, platform: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setExportCopied(platform);
+      setTimeout(() => setExportCopied(null), 2000);
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // Handlers -- Batch
   // -------------------------------------------------------------------------
 
   async function generateBatch() {
@@ -805,7 +1084,7 @@ export default function Dashboard() {
   }
 
   // -------------------------------------------------------------------------
-  // Handlers — Prompts
+  // Handlers -- Prompts
   // -------------------------------------------------------------------------
 
   async function deletePrompt(id: string) {
@@ -823,11 +1102,14 @@ export default function Dashboard() {
   // Calendar computed data
   // -------------------------------------------------------------------------
 
+  const calendarDaysCount = isMobile ? 7 : 14;
+
   const calendarDays = useMemo(() => {
     const week0 = getWeekDays(calendarWeekOffset);
+    if (calendarDaysCount <= 7) return week0;
     const week1 = getWeekDays(calendarWeekOffset + 1);
     return [...week0, ...week1];
-  }, [calendarWeekOffset]);
+  }, [calendarWeekOffset, calendarDaysCount]);
 
   const previewsByDay = useMemo(() => {
     const map: Record<string, PreviewData[]> = {};
@@ -842,7 +1124,6 @@ export default function Dashboard() {
         map[key].push(p);
       }
     });
-    // Sort each day by hour/minute
     Object.values(map).forEach((arr) =>
       arr.sort((a, b) => {
         if (a.scheduledHour !== b.scheduledHour)
@@ -854,6 +1135,25 @@ export default function Dashboard() {
   }, [previews, calendarDays]);
 
   // -------------------------------------------------------------------------
+  // Dynamic Styles
+  // -------------------------------------------------------------------------
+
+  const padding = isMobile ? 16 : 32;
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    background: colors.bg,
+    color: colors.text,
+    border: `1px solid ${colors.border}`,
+    borderRadius: 8,
+    padding: "10px 12px",
+    fontSize: 14,
+    fontFamily: "inherit",
+    outline: "none",
+    boxSizing: "border-box",
+  };
+
+  // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
 
@@ -861,16 +1161,16 @@ export default function Dashboard() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#0a0a0f",
-        color: "#e4e4e7",
+        background: colors.bg,
+        color: colors.text,
         fontFamily: "system-ui, -apple-system, sans-serif",
       }}
     >
       {/* Header */}
       <header
         style={{
-          borderBottom: "1px solid #27272a",
-          padding: "20px 32px",
+          borderBottom: `1px solid ${colors.border}`,
+          padding: isMobile ? "14px 16px" : "20px 32px",
           display: "flex",
           alignItems: "center",
           gap: 12,
@@ -888,27 +1188,56 @@ export default function Dashboard() {
             fontSize: 18,
             fontWeight: 700,
             color: "#0a0a0f",
+            flexShrink: 0,
           }}
         >
           P
         </div>
-        <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: 18, fontWeight: 600, margin: 0 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h1
+            style={{
+              fontSize: isMobile ? 16 : 18,
+              fontWeight: 600,
+              margin: 0,
+              color: colors.text,
+            }}
+          >
             PrismaFlux — Agent Pinterest
           </h1>
-          <p style={{ fontSize: 13, color: "#71717a", margin: 0 }}>
+          <p style={{ fontSize: 13, color: colors.muted, margin: 0 }}>
             Publication automatique multi-plateformes
           </p>
         </div>
+
+        {/* Theme toggle */}
+        <button
+          onClick={() => setDark(!dark)}
+          style={{
+            background: colors.card,
+            border: `1px solid ${colors.border}`,
+            borderRadius: 8,
+            padding: "8px 12px",
+            fontSize: 14,
+            cursor: "pointer",
+            color: colors.text,
+            fontFamily: "inherit",
+            flexShrink: 0,
+          }}
+          title={dark ? "Mode clair" : "Mode sombre"}
+        >
+          {dark ? "\u2600" : "\u263D"}
+        </button>
       </header>
 
       {/* Tab Navigation */}
       <nav
         style={{
-          borderBottom: "1px solid #27272a",
-          padding: "0 32px",
+          borderBottom: `1px solid ${colors.border}`,
+          padding: isMobile ? "0 8px" : "0 32px",
           display: "flex",
           gap: 0,
+          overflowX: isMobile ? "auto" : "visible",
+          WebkitOverflowScrolling: "touch",
         }}
       >
         {TAB_LIST.map((tab) => (
@@ -920,15 +1249,17 @@ export default function Dashboard() {
               border: "none",
               borderBottom:
                 activeTab === tab.key
-                  ? "2px solid #eab308"
+                  ? `2px solid ${colors.accent}`
                   : "2px solid transparent",
-              color: activeTab === tab.key ? "#eab308" : "#71717a",
-              padding: "14px 24px",
-              fontSize: 14,
+              color: activeTab === tab.key ? colors.accent : colors.muted,
+              padding: isMobile ? "12px 14px" : "14px 24px",
+              fontSize: isMobile ? 13 : 14,
               fontWeight: activeTab === tab.key ? 600 : 500,
               cursor: "pointer",
               transition: "all 0.15s",
               fontFamily: "inherit",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
             }}
           >
             {tab.label}
@@ -936,24 +1267,30 @@ export default function Dashboard() {
         ))}
       </nav>
 
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px" }}>
-        {/* Auth Section — always visible */}
-        <section style={{ marginBottom: 28 }}>
-          <SectionTitle>Connexion Pinterest</SectionTitle>
+      <main
+        style={{
+          maxWidth: 1100,
+          margin: "0 auto",
+          padding: `${padding}px ${isMobile ? 12 : 24}px`,
+        }}
+      >
+        {/* Auth Section -- always visible */}
+        <section style={{ marginBottom: isMobile ? 16 : 28 }}>
+          <SectionTitle colors={colors}>Connexion Pinterest</SectionTitle>
           <div
             style={{
-              background: "#18181b",
+              background: colors.card,
               borderRadius: 12,
-              border: "1px solid #27272a",
-              padding: "16px 20px",
+              border: `1px solid ${colors.border}`,
+              padding: isMobile ? "12px 14px" : "16px 20px",
               display: "flex",
               alignItems: "center",
-              gap: 16,
+              gap: isMobile ? 10 : 16,
               flexWrap: "wrap",
             }}
           >
             {authLoading ? (
-              <span style={{ color: "#71717a", fontSize: 14 }}>
+              <span style={{ color: colors.muted, fontSize: 14 }}>
                 Chargement...
               </span>
             ) : auth?.connected ? (
@@ -975,7 +1312,7 @@ export default function Dashboard() {
                   <span
                     style={{
                       fontSize: 13,
-                      color: auth.needsReauth ? "#f59e0b" : "#71717a",
+                      color: auth.needsReauth ? "#f59e0b" : colors.muted,
                       marginLeft: 12,
                     }}
                   >
@@ -1007,8 +1344,8 @@ export default function Dashboard() {
                   onClick={handleLogout}
                   style={{
                     background: "transparent",
-                    color: "#71717a",
-                    border: "1px solid #27272a",
+                    color: colors.muted,
+                    border: `1px solid ${colors.border}`,
                     borderRadius: 8,
                     padding: "8px 16px",
                     fontSize: 13,
@@ -1032,7 +1369,7 @@ export default function Dashboard() {
                     flexShrink: 0,
                   }}
                 />
-                <span style={{ fontSize: 14, color: "#a1a1aa", flex: 1 }}>
+                <span style={{ fontSize: 14, color: colors.muted, flex: 1 }}>
                   Non connecte a Pinterest
                 </span>
                 <a
@@ -1057,34 +1394,309 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Status Cards — always visible */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: 16,
-            marginBottom: 32,
-          }}
-        >
-          <StatusCard
-            label="Pipeline"
-            value="GPT-4o + gpt-image-1"
-            color="#22c55e"
-          />
-          <StatusCard label="Format" value="JPEG 1024x1536" color="#3b82f6" />
-          <StatusCard label="Cron" value="Configurable" color="#eab308" />
-          <StatusCard
-            label="Plateformes"
-            value="Pinterest + LinkedIn"
-            color="#ec4899"
-          />
-        </div>
+        {/* ================================================================= */}
+        {/* KPI Dashboard (always visible above tabs)                         */}
+        {/* ================================================================= */}
+        <section style={{ marginBottom: isMobile ? 16 : 24 }}>
+          <div
+            onClick={() => setKpiExpanded(!kpiExpanded)}
+            style={{
+              display: "grid",
+              gridTemplateColumns: isMobile
+                ? "1fr 1fr"
+                : "repeat(4, 1fr)",
+              gap: isMobile ? 8 : 16,
+              cursor: "pointer",
+            }}
+          >
+            <KpiCard
+              label="Posts cette semaine"
+              value={String(kpiData.postsThisWeek)}
+              color="#3b82f6"
+              colors={colors}
+            />
+            <KpiCard
+              label="Taux de succes"
+              value={`${kpiData.successRate}%`}
+              color="#22c55e"
+              colors={colors}
+            />
+            <KpiCard
+              label="Prochain post"
+              value={
+                kpiData.nextPost
+                  ? timeUntil(kpiData.nextPost.scheduledFor)
+                  : "—"
+              }
+              color={colors.accent}
+              colors={colors}
+            />
+            <KpiCard
+              label="Posts en attente"
+              value={String(kpiData.pendingCount)}
+              color="#f59e0b"
+              colors={colors}
+            />
+          </div>
+          {kpiExpanded && (
+            <div
+              style={{
+                background: colors.card,
+                borderRadius: 12,
+                border: `1px solid ${colors.border}`,
+                padding: isMobile ? "12px 14px" : "16px 20px",
+                marginTop: 8,
+                fontSize: 13,
+                color: colors.muted,
+              }}
+            >
+              <p style={{ margin: "0 0 4px" }}>
+                <strong style={{ color: colors.text }}>
+                  {posts.length}
+                </strong>{" "}
+                publications configurees — {posts.filter((p) => p.enabled).length}{" "}
+                actives
+              </p>
+              <p style={{ margin: "0 0 4px" }}>
+                <strong style={{ color: colors.text }}>
+                  {previews.length}
+                </strong>{" "}
+                previews totaux —{" "}
+                {previews.filter((p) => p.status === "approved").length}{" "}
+                approuves,{" "}
+                {previews.filter((p) => p.status === "published").length}{" "}
+                publies
+              </p>
+              <p style={{ margin: 0 }}>
+                Cliquez pour replier
+              </p>
+            </div>
+          )}
+        </section>
+
+        {/* ================================================================= */}
+        {/* IA Suggestion Banner                                               */}
+        {/* ================================================================= */}
+        {suggestion && (
+          <section style={{ marginBottom: isMobile ? 16 : 24 }}>
+            <div
+              style={{
+                background: dark ? "#1a1800" : "#fffde6",
+                borderRadius: 12,
+                border: `1px solid ${colors.accent}66`,
+                padding: isMobile ? "12px 14px" : "14px 20px",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 12,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 20,
+                  lineHeight: 1,
+                  flexShrink: 0,
+                  marginTop: 2,
+                }}
+              >
+                {"\u2728"}
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: colors.accent,
+                    margin: 0,
+                    marginBottom: 4,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  Recommandation IA
+                </p>
+                <p
+                  style={{
+                    fontSize: 14,
+                    margin: 0,
+                    color: colors.text,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {suggestion}
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ================================================================= */}
         {/* TAB: Publications                                                  */}
         {/* ================================================================= */}
         {activeTab === "publications" && (
-          <section style={{ marginBottom: 32 }}>
+          <section style={{ marginBottom: padding }}>
+            {/* Post du jour */}
+            <div
+              style={{
+                background: dark ? "#111113" : "#fefce8",
+                borderRadius: 12,
+                border: `1px solid ${colors.accent}44`,
+                padding: isMobile ? "14px" : "16px 20px",
+                marginBottom: isMobile ? 16 : 20,
+              }}
+            >
+              <SectionTitle colors={colors} style={{ marginBottom: 10 }}>
+                Post du jour
+              </SectionTitle>
+              {todayPreview ? (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: isMobile ? "flex-start" : "center",
+                    gap: 14,
+                    flexDirection: isMobile ? "column" : "row",
+                  }}
+                >
+                  {/* Thumbnail */}
+                  {todayPreview.imageBase64 ? (
+                    <img
+                      src={`data:${todayPreview.imageContentType || "image/jpeg"};base64,${todayPreview.imageBase64}`}
+                      alt="Preview"
+                      style={{
+                        width: isMobile ? "100%" : 80,
+                        height: isMobile ? 140 : 120,
+                        objectFit: "cover",
+                        borderRadius: 8,
+                        border: `1px solid ${colors.border}`,
+                        flexShrink: 0,
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: isMobile ? "100%" : 80,
+                        height: isMobile ? 140 : 120,
+                        borderRadius: 8,
+                        background:
+                          "linear-gradient(135deg, #eab30833, #3b82f633)",
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 600,
+                        margin: "0 0 6px",
+                        color: colors.text,
+                      }}
+                    >
+                      {todayPreview.content.title || "Sans titre"}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: colors.muted,
+                        margin: "0 0 10px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {padTime(todayPreview.scheduledHour)}:
+                      {padTime(todayPreview.scheduledMinute)} —{" "}
+                      {todayPreview.content.description?.slice(0, 80) || ""}
+                    </p>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button
+                        onClick={() => approvePreview(todayPreview.id)}
+                        style={{
+                          background: "#14532d",
+                          color: "#86efac",
+                          border: "1px solid #166534",
+                          borderRadius: 8,
+                          padding: "8px 18px",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        Approuver
+                      </button>
+                      <button
+                        onClick={() => rejectPreview(todayPreview.id)}
+                        style={{
+                          background: "#7f1d1d",
+                          color: "#fca5a5",
+                          border: "1px solid #991b1b",
+                          borderRadius: 8,
+                          padding: "8px 18px",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        Rejeter
+                      </button>
+                      <button
+                        onClick={() => rejectPreview(todayPreview.id)}
+                        style={{
+                          background: "transparent",
+                          color: colors.muted,
+                          border: `1px solid ${colors.border}`,
+                          borderRadius: 8,
+                          padding: "8px 18px",
+                          fontSize: 13,
+                          fontWeight: 500,
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        Decliner
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "12px 0",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: 14,
+                      color: colors.muted,
+                      margin: "0 0 10px",
+                    }}
+                  >
+                    Aucun post programme aujourd{"'"}hui
+                  </p>
+                  <button
+                    onClick={openCreateForm}
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #eab308, #f59e0b)",
+                      color: "#0a0a0f",
+                      border: "none",
+                      borderRadius: 8,
+                      padding: "8px 20px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    Generer un post
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Header + new post button */}
             <div
               style={{
                 display: "flex",
@@ -1093,7 +1705,7 @@ export default function Dashboard() {
                 marginBottom: 12,
               }}
             >
-              <SectionTitle style={{ marginBottom: 0 }}>
+              <SectionTitle colors={colors} style={{ marginBottom: 0 }}>
                 Publications planifiees
               </SectionTitle>
               <button
@@ -1119,10 +1731,10 @@ export default function Dashboard() {
             {formOpen && (
               <div
                 style={{
-                  background: "#18181b",
+                  background: colors.card,
                   borderRadius: 12,
-                  border: "1px solid #eab30833",
-                  padding: 20,
+                  border: `1px solid ${colors.accent}33`,
+                  padding: isMobile ? 14 : 20,
                   marginBottom: 16,
                 }}
               >
@@ -1146,7 +1758,7 @@ export default function Dashboard() {
                     style={{
                       background: "transparent",
                       border: "none",
-                      color: "#71717a",
+                      color: colors.muted,
                       fontSize: 18,
                       cursor: "pointer",
                       padding: "4px 8px",
@@ -1160,14 +1772,14 @@ export default function Dashboard() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
+                    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
                     gap: 12,
                     marginBottom: 12,
                   }}
                 >
                   {/* Name */}
                   <div>
-                    <FormLabel>Nom</FormLabel>
+                    <FormLabel colors={colors}>Nom</FormLabel>
                     <input
                       type="text"
                       value={form.name}
@@ -1181,7 +1793,7 @@ export default function Dashboard() {
 
                   {/* Schedule */}
                   <div>
-                    <FormLabel>Frequence</FormLabel>
+                    <FormLabel colors={colors}>Frequence</FormLabel>
                     <select
                       value={form.cronExpression}
                       onChange={(e) =>
@@ -1202,7 +1814,7 @@ export default function Dashboard() {
 
                   {/* Theme */}
                   <div>
-                    <FormLabel>Theme visuel</FormLabel>
+                    <FormLabel colors={colors}>Theme visuel</FormLabel>
                     <select
                       value={form.theme}
                       onChange={(e) =>
@@ -1219,9 +1831,27 @@ export default function Dashboard() {
                     </select>
                   </div>
 
-                  {/* Link */}
+                  {/* Prompt Style */}
                   <div>
-                    <FormLabel>Lien de destination</FormLabel>
+                    <FormLabel colors={colors}>Style de ton</FormLabel>
+                    <select
+                      value={form.promptStyle}
+                      onChange={(e) =>
+                        setForm({ ...form, promptStyle: e.target.value })
+                      }
+                      style={inputStyle}
+                    >
+                      {PROMPT_STYLES.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Link */}
+                  <div style={{ gridColumn: isMobile ? undefined : "1 / -1" }}>
+                    <FormLabel colors={colors}>Lien de destination</FormLabel>
                     <input
                       type="url"
                       value={form.link}
@@ -1236,14 +1866,14 @@ export default function Dashboard() {
 
                 {/* Multi-board selection */}
                 <div style={{ marginBottom: 12 }}>
-                  <FormLabel>
+                  <FormLabel colors={colors}>
                     Tableaux Pinterest (multi-selection)
                   </FormLabel>
                   {boards.length === 0 ? (
                     <p
                       style={{
                         fontSize: 13,
-                        color: "#71717a",
+                        color: colors.muted,
                         margin: 0,
                       }}
                     >
@@ -1256,9 +1886,9 @@ export default function Dashboard() {
                         flexWrap: "wrap",
                         gap: 8,
                         padding: 12,
-                        background: "#0a0a0f",
+                        background: colors.bg,
                         borderRadius: 8,
-                        border: "1px solid #27272a",
+                        border: `1px solid ${colors.border}`,
                         maxHeight: 160,
                         overflowY: "auto",
                       }}
@@ -1275,12 +1905,12 @@ export default function Dashboard() {
                               padding: "6px 12px",
                               borderRadius: 6,
                               background: checked
-                                ? "#eab30822"
-                                : "#18181b",
-                              border: `1px solid ${checked ? "#eab30866" : "#27272a"}`,
+                                ? `${colors.accent}22`
+                                : colors.card,
+                              border: `1px solid ${checked ? `${colors.accent}66` : colors.border}`,
                               cursor: "pointer",
                               fontSize: 13,
-                              color: checked ? "#eab308" : "#a1a1aa",
+                              color: checked ? colors.accent : colors.muted,
                               transition: "all 0.15s",
                             }}
                           >
@@ -1289,7 +1919,7 @@ export default function Dashboard() {
                               checked={checked}
                               onChange={() => toggleBoardInForm(b)}
                               style={{
-                                accentColor: "#eab308",
+                                accentColor: colors.accent,
                                 width: 14,
                                 height: 14,
                               }}
@@ -1297,7 +1927,7 @@ export default function Dashboard() {
                             {b.name}{" "}
                             <span
                               style={{
-                                color: "#52525b",
+                                color: colors.muted,
                                 fontSize: 11,
                               }}
                             >
@@ -1312,7 +1942,7 @@ export default function Dashboard() {
 
                 {/* Custom Instructions */}
                 <div style={{ marginBottom: 16 }}>
-                  <FormLabel>
+                  <FormLabel colors={colors}>
                     Instructions personnalisees (optionnel)
                   </FormLabel>
                   <textarea
@@ -1351,15 +1981,15 @@ export default function Dashboard() {
                 )}
 
                 {/* Actions */}
-                <div style={{ display: "flex", gap: 10 }}>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <button
                     onClick={saveForm}
                     disabled={formSaving}
                     style={{
                       background: formSaving
-                        ? "#27272a"
+                        ? colors.border
                         : "linear-gradient(135deg, #eab308, #f59e0b)",
-                      color: formSaving ? "#71717a" : "#0a0a0f",
+                      color: formSaving ? colors.muted : "#0a0a0f",
                       border: "none",
                       borderRadius: 8,
                       padding: "10px 24px",
@@ -1379,8 +2009,8 @@ export default function Dashboard() {
                     onClick={closeForm}
                     style={{
                       background: "transparent",
-                      color: "#a1a1aa",
-                      border: "1px solid #27272a",
+                      color: colors.muted,
+                      border: `1px solid ${colors.border}`,
                       borderRadius: 8,
                       padding: "10px 20px",
                       fontSize: 14,
@@ -1399,12 +2029,12 @@ export default function Dashboard() {
             {postsLoading ? (
               <div
                 style={{
-                  background: "#18181b",
+                  background: colors.card,
                   borderRadius: 12,
-                  border: "1px solid #27272a",
+                  border: `1px solid ${colors.border}`,
                   padding: "32px 20px",
                   textAlign: "center",
-                  color: "#71717a",
+                  color: colors.muted,
                   fontSize: 14,
                 }}
               >
@@ -1413,12 +2043,12 @@ export default function Dashboard() {
             ) : posts.length === 0 ? (
               <div
                 style={{
-                  background: "#18181b",
+                  background: colors.card,
                   borderRadius: 12,
-                  border: "1px solid #27272a",
+                  border: `1px solid ${colors.border}`,
                   padding: "32px 20px",
                   textAlign: "center",
-                  color: "#71717a",
+                  color: colors.muted,
                   fontSize: 14,
                 }}
               >
@@ -1451,6 +2081,9 @@ export default function Dashboard() {
                         ? analyticsCache[post.lastPinId] || null
                         : null
                     }
+                    previews={previews}
+                    colors={colors}
+                    isMobile={isMobile}
                     onEdit={() => openEditForm(post)}
                     onRun={() => runPost(post.id)}
                     onToggle={() => togglePost(post)}
@@ -1474,14 +2107,14 @@ export default function Dashboard() {
         {/* TAB: Calendrier                                                    */}
         {/* ================================================================= */}
         {activeTab === "calendrier" && (
-          <section style={{ marginBottom: 32 }}>
+          <section style={{ marginBottom: padding }}>
             {/* Batch Mode */}
             <div
               style={{
-                background: "#18181b",
+                background: colors.card,
                 borderRadius: 12,
-                border: "1px solid #27272a",
-                padding: "16px 20px",
+                border: `1px solid ${colors.border}`,
+                padding: isMobile ? "12px 14px" : "16px 20px",
                 marginBottom: 20,
               }}
             >
@@ -1493,7 +2126,7 @@ export default function Dashboard() {
                   flexWrap: "wrap",
                 }}
               >
-                <SectionTitle style={{ marginBottom: 0, flex: 1 }}>
+                <SectionTitle colors={colors} style={{ marginBottom: 0, flex: 1 }}>
                   Generation par lot
                 </SectionTitle>
                 <select
@@ -1502,7 +2135,7 @@ export default function Dashboard() {
                   style={{
                     ...inputStyle,
                     width: "auto",
-                    minWidth: 200,
+                    minWidth: isMobile ? 140 : 200,
                   }}
                 >
                   <option value="">Choisir un tableau</option>
@@ -1518,11 +2151,11 @@ export default function Dashboard() {
                   style={{
                     background:
                       batchLoading || !batchBoardId
-                        ? "#27272a"
+                        ? colors.border
                         : "linear-gradient(135deg, #eab308, #f59e0b)",
                     color:
                       batchLoading || !batchBoardId
-                        ? "#71717a"
+                        ? colors.muted
                         : "#0a0a0f",
                     border: "none",
                     borderRadius: 8,
@@ -1546,7 +2179,7 @@ export default function Dashboard() {
                 <p
                   style={{
                     fontSize: 12,
-                    color: "#eab308",
+                    color: colors.accent,
                     margin: "8px 0 0",
                   }}
                 >
@@ -1569,30 +2202,48 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Week navigation */}
+            {/* Rapid mode toggle */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                marginBottom: 16,
+                marginBottom: 12,
               }}
             >
-              <SectionTitle style={{ marginBottom: 0 }}>
+              <SectionTitle colors={colors} style={{ marginBottom: 0 }}>
                 Calendrier
               </SectionTitle>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <button
+                  onClick={() => setRapidMode(!rapidMode)}
+                  style={{
+                    background: rapidMode ? `${colors.accent}22` : "transparent",
+                    color: rapidMode ? colors.accent : colors.muted,
+                    border: `1px solid ${rapidMode ? colors.accent : colors.border}`,
+                    borderRadius: 6,
+                    padding: "6px 12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Mode rapide
+                </button>
                 <SmallButton
                   onClick={() =>
                     setCalendarWeekOffset(Math.max(calendarWeekOffset - 1, -4))
                   }
                   disabled={calendarWeekOffset <= -4}
+                  colors={colors}
                 >
-                  {"\u2190"} Semaine prec.
+                  {"\u2190"} Sem.
                 </SmallButton>
                 <SmallButton
                   onClick={() => setCalendarWeekOffset(0)}
                   variant={calendarWeekOffset === 0 ? "success" : "default"}
+                  colors={colors}
                 >
                   Aujourd{"'"}hui
                 </SmallButton>
@@ -1603,21 +2254,163 @@ export default function Dashboard() {
                     )
                   }
                   disabled={calendarWeekOffset >= 4}
+                  colors={colors}
                 >
-                  Semaine suiv. {"\u2192"}
+                  Sem. {"\u2192"}
                 </SmallButton>
               </div>
             </div>
 
+            {/* Rapid mode carousel */}
+            {rapidMode && rapidPreviews.length > 0 && (
+              <div
+                style={{
+                  marginBottom: 20,
+                  background: colors.card,
+                  borderRadius: 12,
+                  border: `1px solid ${colors.accent}44`,
+                  padding: isMobile ? 14 : 20,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 12,
+                  }}
+                >
+                  <span style={{ fontSize: 13, color: colors.muted }}>
+                    Apercu {rapidIndex + 1} / {rapidPreviews.length}
+                  </span>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <SmallButton
+                      onClick={() =>
+                        setRapidIndex(Math.max(0, rapidIndex - 1))
+                      }
+                      disabled={rapidIndex <= 0}
+                      colors={colors}
+                    >
+                      {"\u2190"} Prec.
+                    </SmallButton>
+                    <SmallButton
+                      onClick={() =>
+                        setRapidIndex(
+                          Math.min(rapidPreviews.length - 1, rapidIndex + 1),
+                        )
+                      }
+                      disabled={rapidIndex >= rapidPreviews.length - 1}
+                      colors={colors}
+                    >
+                      Suiv. {"\u2192"}
+                    </SmallButton>
+                  </div>
+                </div>
+                {(() => {
+                  const rp = rapidPreviews[rapidIndex];
+                  if (!rp) return null;
+                  return (
+                    <div>
+                      {rp.imageBase64 && (
+                        <div
+                          style={{
+                            textAlign: "center",
+                            marginBottom: 12,
+                          }}
+                        >
+                          <img
+                            src={`data:${rp.imageContentType || "image/jpeg"};base64,${rp.imageBase64}`}
+                            alt="Preview"
+                            style={{
+                              maxWidth: "100%",
+                              maxHeight: isMobile ? 300 : 400,
+                              borderRadius: 10,
+                              border: `1px solid ${colors.border}`,
+                            }}
+                          />
+                        </div>
+                      )}
+                      <p
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 600,
+                          margin: "0 0 6px",
+                        }}
+                      >
+                        {rp.content.title || "Sans titre"}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: 13,
+                          color: colors.muted,
+                          margin: "0 0 12px",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {rp.content.description || "—"}
+                      </p>
+                      <div
+                        style={{ display: "flex", gap: 8, flexWrap: "wrap" }}
+                      >
+                        <button
+                          onClick={() => {
+                            approvePreview(rp.id);
+                            if (rapidIndex < rapidPreviews.length - 1) {
+                              setRapidIndex(rapidIndex + 1);
+                            }
+                          }}
+                          style={{
+                            background: "#14532d",
+                            color: "#86efac",
+                            border: "1px solid #166534",
+                            borderRadius: 8,
+                            padding: "10px 24px",
+                            fontSize: 14,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                          }}
+                        >
+                          Approuver
+                        </button>
+                        <button
+                          onClick={() => {
+                            rejectPreview(rp.id);
+                            if (rapidIndex < rapidPreviews.length - 1) {
+                              setRapidIndex(rapidIndex + 1);
+                            }
+                          }}
+                          style={{
+                            background: "#7f1d1d",
+                            color: "#fca5a5",
+                            border: "1px solid #991b1b",
+                            borderRadius: 8,
+                            padding: "10px 24px",
+                            fontSize: 14,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                          }}
+                        >
+                          Rejeter
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* Calendar grid */}
             {previewsLoading ? (
               <div
                 style={{
-                  background: "#18181b",
+                  background: colors.card,
                   borderRadius: 12,
-                  border: "1px solid #27272a",
+                  border: `1px solid ${colors.border}`,
                   padding: "32px 20px",
                   textAlign: "center",
-                  color: "#71717a",
+                  color: colors.muted,
                   fontSize: 14,
                 }}
               >
@@ -1627,7 +2420,9 @@ export default function Dashboard() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(7, 1fr)",
+                  gridTemplateColumns: isMobile
+                    ? "1fr"
+                    : "repeat(7, 1fr)",
                   gap: 8,
                 }}
               >
@@ -1641,10 +2436,14 @@ export default function Dashboard() {
                     <div
                       key={dayKey}
                       style={{
-                        background: isToday ? "#1a1a22" : "#18181b",
+                        background: isToday
+                          ? dark
+                            ? "#1a1a22"
+                            : "#fffde6"
+                          : colors.card,
                         borderRadius: 10,
-                        border: `1px solid ${isToday ? "#eab30844" : "#27272a"}`,
-                        minHeight: 180,
+                        border: `1px solid ${isToday ? `${colors.accent}44` : colors.border}`,
+                        minHeight: isMobile ? 80 : 180,
                         display: "flex",
                         flexDirection: "column",
                       }}
@@ -1652,8 +2451,10 @@ export default function Dashboard() {
                       {/* Day header */}
                       <div
                         style={{
-                          padding: "10px 10px 8px",
-                          borderBottom: "1px solid #27272a",
+                          padding: isMobile
+                            ? "8px 10px 6px"
+                            : "10px 10px 8px",
+                          borderBottom: `1px solid ${colors.border}`,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "space-between",
@@ -1663,7 +2464,7 @@ export default function Dashboard() {
                           style={{
                             fontSize: 11,
                             fontWeight: 600,
-                            color: isToday ? "#eab308" : "#71717a",
+                            color: isToday ? colors.accent : colors.muted,
                             textTransform: "uppercase",
                             letterSpacing: 0.5,
                           }}
@@ -1674,7 +2475,7 @@ export default function Dashboard() {
                           style={{
                             fontSize: 13,
                             fontWeight: isToday ? 700 : 500,
-                            color: isToday ? "#eab308" : "#a1a1aa",
+                            color: isToday ? colors.accent : colors.text,
                           }}
                         >
                           {formatDateShort(day)}
@@ -1696,9 +2497,9 @@ export default function Dashboard() {
                           <span
                             style={{
                               fontSize: 11,
-                              color: "#3f3f46",
+                              color: colors.border,
                               textAlign: "center",
-                              marginTop: 20,
+                              marginTop: isMobile ? 8 : 20,
                             }}
                           >
                             —
@@ -1709,9 +2510,9 @@ export default function Dashboard() {
                               key={prev.id}
                               onClick={() => openPreviewModal(prev)}
                               style={{
-                                background: "#0a0a0f",
+                                background: colors.bg,
                                 borderRadius: 6,
-                                border: `1px solid ${statusColors[prev.status] || "#27272a"}33`,
+                                border: `1px solid ${statusColors[prev.status] || colors.border}33`,
                                 padding: "6px 8px",
                                 cursor: "pointer",
                                 textAlign: "left",
@@ -1731,7 +2532,7 @@ export default function Dashboard() {
                                 <span
                                   style={{
                                     fontSize: 10,
-                                    color: "#71717a",
+                                    color: colors.muted,
                                     fontWeight: 600,
                                     fontVariantNumeric: "tabular-nums",
                                   }}
@@ -1744,7 +2545,7 @@ export default function Dashboard() {
                                     fontSize: 9,
                                     color:
                                       statusColors[prev.status] ||
-                                      "#71717a",
+                                      colors.muted,
                                     fontWeight: 600,
                                     textTransform: "uppercase",
                                     letterSpacing: 0.3,
@@ -1757,7 +2558,7 @@ export default function Dashboard() {
                               <p
                                 style={{
                                   fontSize: 11,
-                                  color: "#d4d4d8",
+                                  color: colors.text,
                                   margin: 0,
                                   overflow: "hidden",
                                   textOverflow: "ellipsis",
@@ -1772,7 +2573,7 @@ export default function Dashboard() {
                                   <span
                                     style={{
                                       fontSize: 9,
-                                      color: "#52525b",
+                                      color: colors.muted,
                                     }}
                                   >
                                     Variante{" "}
@@ -1796,7 +2597,7 @@ export default function Dashboard() {
         {/* TAB: Prompts                                                       */}
         {/* ================================================================= */}
         {activeTab === "prompts" && (
-          <section style={{ marginBottom: 32 }}>
+          <section style={{ marginBottom: padding }}>
             <div
               style={{
                 display: "flex",
@@ -1805,11 +2606,12 @@ export default function Dashboard() {
                 marginBottom: 12,
               }}
             >
-              <SectionTitle style={{ marginBottom: 0 }}>
+              <SectionTitle colors={colors} style={{ marginBottom: 0 }}>
                 Bibliotheque de prompts
               </SectionTitle>
               <SmallButton
                 onClick={() => setPromptsOpen(!promptsOpen)}
+                colors={colors}
               >
                 {promptsOpen ? "Replier" : "Deplier"}
               </SmallButton>
@@ -1820,12 +2622,12 @@ export default function Dashboard() {
                 {promptsLoading ? (
                   <div
                     style={{
-                      background: "#18181b",
+                      background: colors.card,
                       borderRadius: 12,
-                      border: "1px solid #27272a",
+                      border: `1px solid ${colors.border}`,
                       padding: "32px 20px",
                       textAlign: "center",
-                      color: "#71717a",
+                      color: colors.muted,
                       fontSize: 14,
                     }}
                   >
@@ -1834,12 +2636,12 @@ export default function Dashboard() {
                 ) : prompts.length === 0 ? (
                   <div
                     style={{
-                      background: "#18181b",
+                      background: colors.card,
                       borderRadius: 12,
-                      border: "1px solid #27272a",
+                      border: `1px solid ${colors.border}`,
                       padding: "32px 20px",
                       textAlign: "center",
-                      color: "#71717a",
+                      color: colors.muted,
                       fontSize: 14,
                     }}
                   >
@@ -1860,6 +2662,8 @@ export default function Dashboard() {
                         prompt={prompt}
                         deleting={deletingPromptId === prompt.id}
                         onDelete={() => deletePrompt(prompt.id)}
+                        colors={colors}
+                        isMobile={isMobile}
                       />
                     ))}
                   </div>
@@ -1870,20 +2674,148 @@ export default function Dashboard() {
         )}
 
         {/* ================================================================= */}
+        {/* TAB: Perdus                                                        */}
+        {/* ================================================================= */}
+        {activeTab === "perdus" && (
+          <section style={{ marginBottom: padding }}>
+            <SectionTitle colors={colors}>Posts perdus</SectionTitle>
+            {previewsLoading ? (
+              <div
+                style={{
+                  background: colors.card,
+                  borderRadius: 12,
+                  border: `1px solid ${colors.border}`,
+                  padding: "32px 20px",
+                  textAlign: "center",
+                  color: colors.muted,
+                  fontSize: 14,
+                }}
+              >
+                Chargement...
+              </div>
+            ) : rejectedPreviews.length === 0 ? (
+              <div
+                style={{
+                  background: colors.card,
+                  borderRadius: 12,
+                  border: `1px solid ${colors.border}`,
+                  padding: "32px 20px",
+                  textAlign: "center",
+                  color: colors.muted,
+                  fontSize: 14,
+                }}
+              >
+                Aucun post rejete. Les posts declines apparaitront ici.
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isMobile
+                    ? "1fr"
+                    : "repeat(auto-fill, minmax(280px, 1fr))",
+                  gap: 12,
+                }}
+              >
+                {rejectedPreviews.map((prev) => (
+                  <div
+                    key={prev.id}
+                    style={{
+                      background: colors.card,
+                      borderRadius: 12,
+                      border: `1px solid ${colors.border}`,
+                      overflow: "hidden",
+                    }}
+                  >
+                    {prev.imageBase64 ? (
+                      <img
+                        src={`data:${prev.imageContentType || "image/jpeg"};base64,${prev.imageBase64}`}
+                        alt="Preview"
+                        style={{
+                          width: "100%",
+                          height: 160,
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "100%",
+                          height: 160,
+                          background:
+                            "linear-gradient(135deg, #ef444433, #eab30833)",
+                        }}
+                      />
+                    )}
+                    <div style={{ padding: "12px 14px" }}>
+                      <p
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 600,
+                          margin: "0 0 4px",
+                          color: colors.text,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {prev.content.title || "Sans titre"}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: 12,
+                          color: colors.muted,
+                          margin: "0 0 10px",
+                        }}
+                      >
+                        {new Date(prev.scheduledFor).toLocaleDateString(
+                          "fr-FR",
+                          {
+                            day: "numeric",
+                            month: "short",
+                          },
+                        )}
+                      </p>
+                      <button
+                        onClick={() => reusePreview(prev.id)}
+                        style={{
+                          background: `${colors.accent}22`,
+                          color: colors.accent,
+                          border: `1px solid ${colors.accent}66`,
+                          borderRadius: 8,
+                          padding: "6px 16px",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          width: "100%",
+                        }}
+                      >
+                        Reutiliser
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ================================================================= */}
         {/* TAB: Test                                                          */}
         {/* ================================================================= */}
         {activeTab === "test" && (
           <>
-            <section style={{ marginBottom: 32 }}>
-              <SectionTitle>Test du pipeline</SectionTitle>
+            <section style={{ marginBottom: padding }}>
+              <SectionTitle colors={colors}>Test du pipeline</SectionTitle>
               <button
                 onClick={runTest}
                 disabled={testLoading}
                 style={{
                   background: testLoading
-                    ? "#27272a"
+                    ? colors.border
                     : "linear-gradient(135deg, #eab308, #f59e0b)",
-                  color: testLoading ? "#71717a" : "#0a0a0f",
+                  color: testLoading ? colors.muted : "#0a0a0f",
                   border: "none",
                   borderRadius: 10,
                   padding: "12px 28px",
@@ -1901,7 +2833,7 @@ export default function Dashboard() {
               <p
                 style={{
                   fontSize: 13,
-                  color: "#71717a",
+                  color: colors.muted,
                   marginTop: 8,
                 }}
               >
@@ -1911,11 +2843,12 @@ export default function Dashboard() {
             </section>
 
             {testResult && (
-              <section style={{ marginBottom: 32 }}>
-                <SectionTitle>Resultat du test</SectionTitle>
+              <section style={{ marginBottom: padding }}>
+                <SectionTitle colors={colors}>Resultat du test</SectionTitle>
                 <PipelineResultCard
                   result={testResult}
                   onDismiss={() => setTestResult(null)}
+                  colors={colors}
                 />
               </section>
             )}
@@ -1939,28 +2872,19 @@ export default function Dashboard() {
           onReject={rejectPreview}
           onPublish={publishPreview}
           actionLoading={previewActionLoading}
+          colors={colors}
+          dark={dark}
+          isMobile={isMobile}
+          onExport={handleExport}
+          exportLoading={exportLoading}
+          exportData={exportData}
+          exportCopied={exportCopied}
+          onCopyExport={copyToClipboard}
         />
       )}
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Shared Styles
-// ---------------------------------------------------------------------------
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  background: "#0a0a0f",
-  color: "#e4e4e7",
-  border: "1px solid #27272a",
-  borderRadius: 8,
-  padding: "10px 12px",
-  fontSize: 14,
-  fontFamily: "inherit",
-  outline: "none",
-  boxSizing: "border-box",
-};
 
 // ---------------------------------------------------------------------------
 // Sub-Components
@@ -1969,16 +2893,18 @@ const inputStyle: React.CSSProperties = {
 function SectionTitle({
   children,
   style,
+  colors,
 }: {
   children: React.ReactNode;
   style?: React.CSSProperties;
+  colors: ThemeColors;
 }) {
   return (
     <h2
       style={{
         fontSize: 13,
         fontWeight: 600,
-        color: "#a1a1aa",
+        color: colors.muted,
         textTransform: "uppercase",
         letterSpacing: 1,
         margin: 0,
@@ -1991,48 +2917,56 @@ function SectionTitle({
   );
 }
 
-function StatusCard({
+function KpiCard({
   label,
   value,
   color,
+  colors,
 }: {
   label: string;
   value: string;
   color: string;
+  colors: ThemeColors;
 }) {
   return (
     <div
       style={{
-        background: "#18181b",
+        background: colors.card,
         borderRadius: 12,
-        border: "1px solid #27272a",
-        padding: "16px 20px",
+        border: `1px solid ${colors.border}`,
+        padding: "14px 16px",
       }}
     >
       <p
         style={{
           fontSize: 12,
-          color: "#71717a",
+          color: colors.muted,
           margin: 0,
           marginBottom: 4,
         }}
       >
         {label}
       </p>
-      <p style={{ fontSize: 15, fontWeight: 600, margin: 0, color }}>
+      <p style={{ fontSize: 22, fontWeight: 700, margin: 0, color }}>
         {value}
       </p>
     </div>
   );
 }
 
-function FormLabel({ children }: { children: React.ReactNode }) {
+function FormLabel({
+  children,
+  colors,
+}: {
+  children: React.ReactNode;
+  colors: ThemeColors;
+}) {
   return (
     <label
       style={{
         display: "block",
         fontSize: 12,
-        color: "#a1a1aa",
+        color: colors.muted,
         fontWeight: 600,
         marginBottom: 6,
       }}
@@ -2048,30 +2982,32 @@ function SmallButton({
   disabled,
   variant = "default",
   title,
+  colors,
 }: {
   children: React.ReactNode;
   onClick: () => void;
   disabled?: boolean;
   variant?: "default" | "danger" | "success" | "ghost";
   title?: string;
+  colors: ThemeColors;
 }) {
   const bgMap = {
-    default: "#27272a",
+    default: colors.border,
     danger: "#7f1d1d",
     success: "#14532d",
     ghost: "transparent",
   };
   const colorMap = {
-    default: "#e4e4e7",
+    default: colors.text,
     danger: "#fca5a5",
     success: "#86efac",
-    ghost: "#71717a",
+    ghost: colors.muted,
   };
   const borderMap = {
-    default: "1px solid #3f3f46",
+    default: `1px solid ${colors.border}`,
     danger: "1px solid #991b1b",
     success: "1px solid #166534",
-    ghost: "1px solid #27272a",
+    ghost: `1px solid ${colors.border}`,
   };
 
   return (
@@ -2080,8 +3016,8 @@ function SmallButton({
       disabled={disabled}
       title={title}
       style={{
-        background: disabled ? "#1c1c1e" : bgMap[variant],
-        color: disabled ? "#52525b" : colorMap[variant],
+        background: disabled ? colors.bg : bgMap[variant],
+        color: disabled ? colors.muted : colorMap[variant],
         border: borderMap[variant],
         borderRadius: 6,
         padding: "6px 12px",
@@ -2099,7 +3035,7 @@ function SmallButton({
 }
 
 // ---------------------------------------------------------------------------
-// Post Card (with analytics)
+// Post Card (with analytics + feed visuel)
 // ---------------------------------------------------------------------------
 
 function PostCard({
@@ -2110,6 +3046,9 @@ function PostCard({
   confirmDelete,
   runResult,
   analytics,
+  previews,
+  colors,
+  isMobile,
   onEdit,
   onRun,
   onToggle,
@@ -2124,6 +3063,9 @@ function PostCard({
   confirmDelete: boolean;
   runResult: PipelineResult | null;
   analytics: PinAnalytics | null;
+  previews: PreviewData[];
+  colors: ThemeColors;
+  isMobile: boolean;
   onEdit: () => void;
   onRun: () => void;
   onToggle: () => void;
@@ -2131,13 +3073,21 @@ function PostCard({
   onCancelDelete: () => void;
   onDismissResult: () => void;
 }) {
+  // Find latest preview image for this post
+  const latestPreview = previews
+    .filter((p) => p.postId === post.id && p.imageBase64)
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )[0];
+
   return (
     <div
       style={{
-        background: "#18181b",
+        background: colors.card,
         borderRadius: 12,
-        border: `1px solid ${post.enabled ? "#27272a" : "#1c1c1e"}`,
-        padding: "16px 20px",
+        border: `1px solid ${post.enabled ? colors.border : colors.bg}`,
+        padding: isMobile ? "12px 14px" : "16px 20px",
         opacity: post.enabled ? 1 : 0.7,
         transition: "opacity 0.2s",
       }}
@@ -2146,147 +3096,184 @@ function PostCard({
       <div
         style={{
           display: "flex",
-          alignItems: "flex-start",
+          alignItems: isMobile ? "flex-start" : "flex-start",
           gap: 12,
           marginBottom: 10,
+          flexDirection: isMobile ? "column" : "row",
         }}
       >
-        {/* Toggle */}
-        <button
-          onClick={onToggle}
-          disabled={toggling}
-          title={post.enabled ? "Desactiver" : "Activer"}
+        {/* Image thumbnail */}
+        <div
           style={{
-            width: 38,
-            height: 22,
-            borderRadius: 11,
-            border: "none",
-            background: post.enabled ? "#eab308" : "#3f3f46",
-            cursor: toggling ? "not-allowed" : "pointer",
-            position: "relative",
-            flexShrink: 0,
-            marginTop: 2,
-            transition: "background 0.2s",
+            display: "flex",
+            gap: 12,
+            alignItems: "flex-start",
+            flex: 1,
+            minWidth: 0,
+            width: isMobile ? "100%" : undefined,
           }}
         >
-          <div
-            style={{
-              width: 16,
-              height: 16,
-              borderRadius: "50%",
-              background: "#fff",
-              position: "absolute",
-              top: 3,
-              left: post.enabled ? 19 : 3,
-              transition: "left 0.2s",
-            }}
-          />
-        </button>
+          {latestPreview ? (
+            <img
+              src={`data:${latestPreview.imageContentType || "image/jpeg"};base64,${latestPreview.imageBase64}`}
+              alt=""
+              style={{
+                width: 64,
+                height: 96,
+                objectFit: "cover",
+                borderRadius: 8,
+                border: `1px solid ${colors.border}`,
+                flexShrink: 0,
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 64,
+                height: 96,
+                borderRadius: 8,
+                background: `linear-gradient(135deg, ${colors.accent}33, #3b82f633)`,
+                flexShrink: 0,
+              }}
+            />
+          )}
 
-        {/* Info */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 4,
-            }}
-          >
-            <span style={{ fontSize: 15, fontWeight: 600 }}>
-              {post.name}
-            </span>
-            {post.lastRunStatus && (
-              <span
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background:
-                    post.lastRunStatus === "success"
-                      ? "#22c55e"
-                      : "#ef4444",
-                  display: "inline-block",
-                  flexShrink: 0,
-                }}
-                title={
-                  post.lastRunStatus === "success"
-                    ? "Dernier run reussi"
-                    : `Erreur: ${post.lastRunError || "inconnue"}`
-                }
-              />
-            )}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 16,
-              flexWrap: "wrap",
-              fontSize: 13,
-              color: "#71717a",
-            }}
-          >
-            <span title="Tableau(x)">
-              <span style={{ color: "#ec4899" }}>
-                {"\u25CF"}
-              </span>{" "}
-              {post.boardNames && post.boardNames.length > 1
-                ? `${post.boardNames[0]} +${post.boardNames.length - 1}`
-                : post.boardName}
-            </span>
-            <span title="Frequence">
-              <span style={{ color: "#eab308" }}>
-                {"\u25CF"}
-              </span>{" "}
-              {cronToHuman(post.cronExpression)}
-            </span>
-            {post.theme && (
-              <span
-                title="Theme"
-                style={{
-                  maxWidth: 220,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <span style={{ color: "#3b82f6" }}>
-                  {"\u25CF"}
-                </span>{" "}
-                {post.theme}
-              </span>
-            )}
-            {post.lastRunAt && (
-              <span
-                title={`Dernier run: ${new Date(post.lastRunAt).toLocaleString()}`}
-              >
-                Dernier run: {timeAgo(post.lastRunAt)}
-              </span>
-            )}
-          </div>
-
-          {/* Inline analytics */}
-          {analytics && (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {/* Toggle + Name */}
             <div
               style={{
                 display: "flex",
-                gap: 12,
-                marginTop: 6,
-                fontSize: 11,
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 4,
               }}
             >
-              <span style={{ color: "#3b82f6" }}>
-                {analytics.impressions} impressions
+              {/* Toggle */}
+              <button
+                onClick={onToggle}
+                disabled={toggling}
+                title={post.enabled ? "Desactiver" : "Activer"}
+                style={{
+                  width: 38,
+                  height: 22,
+                  borderRadius: 11,
+                  border: "none",
+                  background: post.enabled ? colors.accent : colors.border,
+                  cursor: toggling ? "not-allowed" : "pointer",
+                  position: "relative",
+                  flexShrink: 0,
+                  transition: "background 0.2s",
+                }}
+              >
+                <div
+                  style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: "50%",
+                    background: "#fff",
+                    position: "absolute",
+                    top: 3,
+                    left: post.enabled ? 19 : 3,
+                    transition: "left 0.2s",
+                  }}
+                />
+              </button>
+
+              <span style={{ fontSize: 15, fontWeight: 600 }}>
+                {post.name}
               </span>
-              <span style={{ color: "#22c55e" }}>
-                {analytics.saves} saves
-              </span>
-              <span style={{ color: "#eab308" }}>
-                {analytics.clicks} clics
-              </span>
+              {post.lastRunStatus && (
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background:
+                      post.lastRunStatus === "success"
+                        ? "#22c55e"
+                        : "#ef4444",
+                    display: "inline-block",
+                    flexShrink: 0,
+                  }}
+                  title={
+                    post.lastRunStatus === "success"
+                      ? "Dernier run reussi"
+                      : `Erreur: ${post.lastRunError || "inconnue"}`
+                  }
+                />
+              )}
             </div>
-          )}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: isMobile ? 8 : 16,
+                flexWrap: "wrap",
+                fontSize: 13,
+                color: colors.muted,
+              }}
+            >
+              <span title="Tableau(x)">
+                <span style={{ color: "#ec4899" }}>
+                  {"\u25CF"}
+                </span>{" "}
+                {post.boardNames && post.boardNames.length > 1
+                  ? `${post.boardNames[0]} +${post.boardNames.length - 1}`
+                  : post.boardName}
+              </span>
+              <span title="Frequence">
+                <span style={{ color: colors.accent }}>
+                  {"\u25CF"}
+                </span>{" "}
+                {cronToHuman(post.cronExpression)}
+              </span>
+              {post.theme && !isMobile && (
+                <span
+                  title="Theme"
+                  style={{
+                    maxWidth: 220,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span style={{ color: "#3b82f6" }}>
+                    {"\u25CF"}
+                  </span>{" "}
+                  {post.theme}
+                </span>
+              )}
+              {post.lastRunAt && (
+                <span
+                  title={`Dernier run: ${new Date(post.lastRunAt).toLocaleString()}`}
+                >
+                  Dernier run: {timeAgo(post.lastRunAt)}
+                </span>
+              )}
+            </div>
+
+            {/* Inline analytics */}
+            {analytics && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: 12,
+                  marginTop: 6,
+                  fontSize: 11,
+                }}
+              >
+                <span style={{ color: "#3b82f6" }}>
+                  {analytics.impressions} impressions
+                </span>
+                <span style={{ color: "#22c55e" }}>
+                  {analytics.saves} saves
+                </span>
+                <span style={{ color: colors.accent }}>
+                  {analytics.clicks} clics
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Actions */}
@@ -2298,7 +3285,7 @@ function PostCard({
             flexWrap: "wrap",
           }}
         >
-          <SmallButton onClick={onEdit} title="Modifier">
+          <SmallButton onClick={onEdit} title="Modifier" colors={colors}>
             Modifier
           </SmallButton>
           <SmallButton
@@ -2306,6 +3293,7 @@ function PostCard({
             disabled={running || !post.enabled}
             variant="success"
             title="Publier maintenant"
+            colors={colors}
           >
             {running ? "Publication..." : "Publier"}
           </SmallButton>
@@ -2315,10 +3303,15 @@ function PostCard({
                 onClick={onDelete}
                 disabled={deleting}
                 variant="danger"
+                colors={colors}
               >
                 {deleting ? "..." : "Confirmer"}
               </SmallButton>
-              <SmallButton onClick={onCancelDelete} variant="ghost">
+              <SmallButton
+                onClick={onCancelDelete}
+                variant="ghost"
+                colors={colors}
+              >
                 Non
               </SmallButton>
             </div>
@@ -2327,6 +3320,7 @@ function PostCard({
               onClick={onDelete}
               variant="danger"
               title="Supprimer"
+              colors={colors}
             >
               Supprimer
             </SmallButton>
@@ -2358,6 +3352,7 @@ function PostCard({
           <PipelineResultCard
             result={runResult}
             onDismiss={onDismissResult}
+            colors={colors}
           />
         </div>
       )}
@@ -2372,14 +3367,16 @@ function PostCard({
 function PipelineResultCard({
   result,
   onDismiss,
+  colors,
 }: {
   result: PipelineResult;
   onDismiss: () => void;
+  colors: ThemeColors;
 }) {
   return (
     <div
       style={{
-        background: "#18181b",
+        background: colors.card,
         borderRadius: 12,
         border: `1px solid ${result.success ? "#22c55e33" : "#ef444433"}`,
         padding: 20,
@@ -2405,13 +3402,13 @@ function PipelineResultCard({
         <span style={{ fontWeight: 600, fontSize: 14 }}>
           {result.success ? "Succes" : "Echec"}
         </span>
-        <span style={{ color: "#71717a", fontSize: 13 }}>
+        <span style={{ color: colors.muted, fontSize: 13 }}>
           — {(result.durationMs / 1000).toFixed(1)}s
         </span>
         {result.postName && (
           <span
             style={{
-              color: "#a1a1aa",
+              color: colors.muted,
               fontSize: 13,
               marginLeft: 4,
             }}
@@ -2425,7 +3422,7 @@ function PipelineResultCard({
             marginLeft: "auto",
             background: "transparent",
             border: "none",
-            color: "#71717a",
+            color: colors.muted,
             fontSize: 16,
             cursor: "pointer",
             padding: "2px 6px",
@@ -2452,7 +3449,6 @@ function PipelineResultCard({
         </div>
       )}
 
-      {/* Show image if available */}
       {result.imageBase64 && (
         <div style={{ marginBottom: 16, textAlign: "center" }}>
           <img
@@ -2462,34 +3458,45 @@ function PipelineResultCard({
               maxWidth: "100%",
               maxHeight: 400,
               borderRadius: 10,
-              border: "1px solid #27272a",
+              border: `1px solid ${colors.border}`,
             }}
           />
         </div>
       )}
 
       {result.prompt && (
-        <ResultBlock title="Theme" value={result.prompt.theme} />
+        <ResultBlock
+          title="Theme"
+          value={result.prompt.theme}
+          colors={colors}
+        />
       )}
       {result.content && (
         <>
           <ResultBlock
             title="Titre Pinterest"
             value={result.content.title}
+            colors={colors}
           />
           <ResultBlock
             title="Description Pinterest"
             value={result.content.description}
+            colors={colors}
           />
         </>
       )}
       {result.linkedin && (
-        <ResultBlock title="Post LinkedIn" value={result.linkedin.post} />
+        <ResultBlock
+          title="Post LinkedIn"
+          value={result.linkedin.post}
+          colors={colors}
+        />
       )}
       {result.pin && (
         <ResultBlock
           title="Pin publie"
           value={`ID: ${result.pin.pinId} — ${new Date(result.pin.createdAt).toLocaleString()}`}
+          colors={colors}
         />
       )}
       {result.pins && result.pins.length > 0 && (
@@ -2501,19 +3508,28 @@ function PipelineResultCard({
                 `ID: ${p.pinId} — ${new Date(p.createdAt).toLocaleString()}`,
             )
             .join("\n")}
+          colors={colors}
         />
       )}
     </div>
   );
 }
 
-function ResultBlock({ title, value }: { title: string; value: string }) {
+function ResultBlock({
+  title,
+  value,
+  colors,
+}: {
+  title: string;
+  value: string;
+  colors: ThemeColors;
+}) {
   return (
     <div style={{ marginTop: 12 }}>
       <p
         style={{
           fontSize: 12,
-          color: "#71717a",
+          color: colors.muted,
           margin: 0,
           marginBottom: 4,
           fontWeight: 600,
@@ -2525,7 +3541,7 @@ function ResultBlock({ title, value }: { title: string; value: string }) {
         style={{
           fontSize: 14,
           margin: 0,
-          color: "#d4d4d8",
+          color: colors.text,
           lineHeight: 1.5,
           whiteSpace: "pre-wrap",
         }}
@@ -2550,6 +3566,14 @@ function PreviewModal({
   onReject,
   onPublish,
   actionLoading,
+  colors,
+  dark,
+  isMobile,
+  onExport,
+  exportLoading,
+  exportData,
+  exportCopied,
+  onCopyExport,
 }: {
   preview: PreviewData;
   variants: PreviewData[];
@@ -2560,6 +3584,14 @@ function PreviewModal({
   onReject: (id: string) => void;
   onPublish: (id: string) => void;
   actionLoading: boolean;
+  colors: ThemeColors;
+  dark: boolean;
+  isMobile: boolean;
+  onExport: (preview: PreviewData) => void;
+  exportLoading: boolean;
+  exportData: SocialExport | null;
+  exportCopied: string | null;
+  onCopyExport: (text: string, platform: string) => void;
 }) {
   const current = variants[activeVariant] || preview;
 
@@ -2568,12 +3600,12 @@ function PreviewModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.8)",
+        background: dark ? "rgba(0,0,0,0.8)" : "rgba(0,0,0,0.5)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         zIndex: 1000,
-        padding: 20,
+        padding: isMobile ? 8 : 20,
       }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -2581,9 +3613,9 @@ function PreviewModal({
     >
       <div
         style={{
-          background: "#18181b",
+          background: colors.card,
           borderRadius: 16,
-          border: "1px solid #27272a",
+          border: `1px solid ${colors.border}`,
           maxWidth: 800,
           width: "100%",
           maxHeight: "90vh",
@@ -2594,14 +3626,14 @@ function PreviewModal({
         {/* Modal header */}
         <div
           style={{
-            padding: "16px 20px",
-            borderBottom: "1px solid #27272a",
+            padding: isMobile ? "12px 14px" : "16px 20px",
+            borderBottom: `1px solid ${colors.border}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             position: "sticky",
             top: 0,
-            background: "#18181b",
+            background: colors.card,
             zIndex: 1,
             borderRadius: "16px 16px 0 0",
           }}
@@ -2614,11 +3646,11 @@ function PreviewModal({
               style={{
                 fontSize: 11,
                 fontWeight: 600,
-                color: statusColors[current.status] || "#71717a",
+                color: statusColors[current.status] || colors.muted,
                 textTransform: "uppercase",
                 padding: "2px 8px",
                 borderRadius: 4,
-                background: `${statusColors[current.status] || "#71717a"}22`,
+                background: `${statusColors[current.status] || colors.muted}22`,
               }}
             >
               {statusLabels[current.status] || current.status}
@@ -2629,7 +3661,7 @@ function PreviewModal({
             style={{
               background: "transparent",
               border: "none",
-              color: "#71717a",
+              color: colors.muted,
               fontSize: 20,
               cursor: "pointer",
               padding: "4px 8px",
@@ -2646,8 +3678,9 @@ function PreviewModal({
             style={{
               display: "flex",
               gap: 0,
-              borderBottom: "1px solid #27272a",
-              padding: "0 20px",
+              borderBottom: `1px solid ${colors.border}`,
+              padding: isMobile ? "0 14px" : "0 20px",
+              overflowX: isMobile ? "auto" : "visible",
             }}
           >
             {variants.map((v, idx) => (
@@ -2659,15 +3692,16 @@ function PreviewModal({
                   border: "none",
                   borderBottom:
                     idx === activeVariant
-                      ? "2px solid #eab308"
+                      ? `2px solid ${colors.accent}`
                       : "2px solid transparent",
                   color:
-                    idx === activeVariant ? "#eab308" : "#71717a",
+                    idx === activeVariant ? colors.accent : colors.muted,
                   padding: "10px 18px",
                   fontSize: 13,
                   fontWeight: idx === activeVariant ? 600 : 500,
                   cursor: "pointer",
                   fontFamily: "inherit",
+                  whiteSpace: "nowrap",
                 }}
               >
                 Variante {String.fromCharCode(65 + idx)}
@@ -2679,7 +3713,7 @@ function PreviewModal({
         )}
 
         {/* Content */}
-        <div style={{ padding: 20 }}>
+        <div style={{ padding: isMobile ? 14 : 20 }}>
           {/* Image */}
           {current.imageBase64 && (
             <div
@@ -2693,9 +3727,9 @@ function PreviewModal({
                 alt={current.content.altText || "Preview"}
                 style={{
                   maxWidth: "100%",
-                  maxHeight: 500,
+                  maxHeight: isMobile ? 350 : 500,
                   borderRadius: 12,
-                  border: "1px solid #27272a",
+                  border: `1px solid ${colors.border}`,
                 }}
               />
             </div>
@@ -2706,7 +3740,7 @@ function PreviewModal({
             <p
               style={{
                 fontSize: 12,
-                color: "#71717a",
+                color: colors.muted,
                 margin: 0,
                 marginBottom: 4,
                 fontWeight: 600,
@@ -2719,7 +3753,7 @@ function PreviewModal({
                 fontSize: 16,
                 fontWeight: 600,
                 margin: 0,
-                color: "#e4e4e7",
+                color: colors.text,
               }}
             >
               {current.content.title || "—"}
@@ -2730,7 +3764,7 @@ function PreviewModal({
             <p
               style={{
                 fontSize: 12,
-                color: "#71717a",
+                color: colors.muted,
                 margin: 0,
                 marginBottom: 4,
                 fontWeight: 600,
@@ -2742,7 +3776,7 @@ function PreviewModal({
               style={{
                 fontSize: 14,
                 margin: 0,
-                color: "#d4d4d8",
+                color: colors.text,
                 lineHeight: 1.5,
                 whiteSpace: "pre-wrap",
               }}
@@ -2757,7 +3791,7 @@ function PreviewModal({
               <p
                 style={{
                   fontSize: 12,
-                  color: "#71717a",
+                  color: colors.muted,
                   margin: 0,
                   marginBottom: 4,
                   fontWeight: 600,
@@ -2767,9 +3801,9 @@ function PreviewModal({
               </p>
               <div
                 style={{
-                  background: "#0a0a0f",
+                  background: colors.bg,
                   borderRadius: 8,
-                  border: "1px solid #27272a",
+                  border: `1px solid ${colors.border}`,
                   padding: 12,
                 }}
               >
@@ -2777,7 +3811,7 @@ function PreviewModal({
                   style={{
                     fontSize: 13,
                     margin: 0,
-                    color: "#d4d4d8",
+                    color: colors.text,
                     lineHeight: 1.5,
                     whiteSpace: "pre-wrap",
                   }}
@@ -2794,7 +3828,7 @@ function PreviewModal({
               <p
                 style={{
                   fontSize: 12,
-                  color: "#71717a",
+                  color: colors.muted,
                   margin: 0,
                   marginBottom: 4,
                   fontWeight: 600,
@@ -2806,7 +3840,7 @@ function PreviewModal({
                 style={{
                   fontSize: 13,
                   margin: 0,
-                  color: "#a1a1aa",
+                  color: colors.muted,
                 }}
               >
                 {current.prompt.theme}
@@ -2821,7 +3855,7 @@ function PreviewModal({
             <p
               style={{
                 fontSize: 12,
-                color: "#71717a",
+                color: colors.muted,
                 margin: 0,
                 marginBottom: 4,
                 fontWeight: 600,
@@ -2833,7 +3867,7 @@ function PreviewModal({
               style={{
                 fontSize: 13,
                 margin: 0,
-                color: "#a1a1aa",
+                color: colors.muted,
               }}
             >
               {new Date(current.scheduledFor).toLocaleDateString(
@@ -2849,13 +3883,178 @@ function PreviewModal({
             </p>
           </div>
 
+          {/* =========== Export multi-plateforme =========== */}
+          <div
+            style={{
+              borderTop: `1px solid ${colors.border}`,
+              paddingTop: 16,
+              marginBottom: 16,
+            }}
+          >
+            <p
+              style={{
+                fontSize: 12,
+                color: colors.muted,
+                margin: 0,
+                marginBottom: 10,
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+              }}
+            >
+              Exporter multi-plateforme
+            </p>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+                marginBottom: exportData ? 12 : 0,
+              }}
+            >
+              <button
+                onClick={() => onExport(current)}
+                disabled={exportLoading}
+                style={{
+                  background: "#0077b5",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "8px 16px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: exportLoading ? "not-allowed" : "pointer",
+                  fontFamily: "inherit",
+                  opacity: exportLoading ? 0.6 : 1,
+                }}
+              >
+                {exportLoading ? "..." : "LinkedIn"}
+              </button>
+              <button
+                onClick={() => onExport(current)}
+                disabled={exportLoading}
+                style={{
+                  background:
+                    "linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "8px 16px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: exportLoading ? "not-allowed" : "pointer",
+                  fontFamily: "inherit",
+                  opacity: exportLoading ? 0.6 : 1,
+                }}
+              >
+                {exportLoading ? "..." : "Instagram"}
+              </button>
+              <button
+                onClick={() => onExport(current)}
+                disabled={exportLoading}
+                style={{
+                  background: "#1877f2",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "8px 16px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: exportLoading ? "not-allowed" : "pointer",
+                  fontFamily: "inherit",
+                  opacity: exportLoading ? 0.6 : 1,
+                }}
+              >
+                {exportLoading ? "..." : "Facebook"}
+              </button>
+            </div>
+
+            {/* Export results */}
+            {exportData && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                }}
+              >
+                {(
+                  [
+                    ["linkedin", "LinkedIn", exportData.linkedin],
+                    ["instagram", "Instagram", exportData.instagram],
+                    ["facebook", "Facebook", exportData.facebook],
+                  ] as [string, string, string][]
+                ).map(([key, label, text]) =>
+                  text ? (
+                    <div key={key}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: 4,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: colors.muted,
+                          }}
+                        >
+                          {label}
+                        </span>
+                        <button
+                          onClick={() => onCopyExport(text, key)}
+                          style={{
+                            background: "transparent",
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: 6,
+                            padding: "4px 10px",
+                            fontSize: 11,
+                            cursor: "pointer",
+                            color:
+                              exportCopied === key
+                                ? "#22c55e"
+                                : colors.muted,
+                            fontFamily: "inherit",
+                          }}
+                        >
+                          {exportCopied === key ? "Copie !" : "Copier"}
+                        </button>
+                      </div>
+                      <textarea
+                        readOnly
+                        value={text}
+                        rows={4}
+                        style={{
+                          width: "100%",
+                          background: colors.bg,
+                          color: colors.text,
+                          border: `1px solid ${colors.border}`,
+                          borderRadius: 8,
+                          padding: "8px 10px",
+                          fontSize: 12,
+                          fontFamily: "inherit",
+                          resize: "vertical",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </div>
+                  ) : null,
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Action buttons */}
           <div
             style={{
               display: "flex",
               gap: 10,
-              borderTop: "1px solid #27272a",
+              borderTop: `1px solid ${colors.border}`,
               paddingTop: 16,
+              flexWrap: "wrap",
             }}
           >
             {current.status === "pending" && (
@@ -2865,9 +4064,9 @@ function PreviewModal({
                   disabled={actionLoading}
                   style={{
                     background: actionLoading
-                      ? "#27272a"
+                      ? colors.border
                       : "#14532d",
-                    color: actionLoading ? "#71717a" : "#86efac",
+                    color: actionLoading ? colors.muted : "#86efac",
                     border: "1px solid #166534",
                     borderRadius: 8,
                     padding: "10px 24px",
@@ -2886,9 +4085,9 @@ function PreviewModal({
                   disabled={actionLoading}
                   style={{
                     background: actionLoading
-                      ? "#27272a"
+                      ? colors.border
                       : "#7f1d1d",
-                    color: actionLoading ? "#71717a" : "#fca5a5",
+                    color: actionLoading ? colors.muted : "#fca5a5",
                     border: "1px solid #991b1b",
                     borderRadius: 8,
                     padding: "10px 24px",
@@ -2910,9 +4109,9 @@ function PreviewModal({
                 disabled={actionLoading}
                 style={{
                   background: actionLoading
-                    ? "#27272a"
+                    ? colors.border
                     : "linear-gradient(135deg, #eab308, #f59e0b)",
-                  color: actionLoading ? "#71717a" : "#0a0a0f",
+                  color: actionLoading ? colors.muted : "#0a0a0f",
                   border: "none",
                   borderRadius: 8,
                   padding: "10px 24px",
@@ -2933,9 +4132,9 @@ function PreviewModal({
                 disabled={actionLoading}
                 style={{
                   background: actionLoading
-                    ? "#27272a"
+                    ? colors.border
                     : "#14532d",
-                  color: actionLoading ? "#71717a" : "#86efac",
+                  color: actionLoading ? colors.muted : "#86efac",
                   border: "1px solid #166534",
                   borderRadius: 8,
                   padding: "10px 24px",
@@ -2966,8 +4165,8 @@ function PreviewModal({
               style={{
                 marginLeft: "auto",
                 background: "transparent",
-                color: "#a1a1aa",
-                border: "1px solid #27272a",
+                color: colors.muted,
+                border: `1px solid ${colors.border}`,
                 borderRadius: 8,
                 padding: "10px 20px",
                 fontSize: 14,
@@ -2993,127 +4192,137 @@ function PromptCard({
   prompt,
   deleting,
   onDelete,
+  colors,
+  isMobile,
 }: {
   prompt: SavedPrompt;
   deleting: boolean;
   onDelete: () => void;
+  colors: ThemeColors;
+  isMobile: boolean;
 }) {
   const [confirmDel, setConfirmDel] = useState(false);
 
   return (
     <div
       style={{
-        background: "#18181b",
+        background: colors.card,
         borderRadius: 12,
-        border: "1px solid #27272a",
-        padding: "14px 18px",
+        border: `1px solid ${colors.border}`,
+        padding: isMobile ? "12px 14px" : "14px 18px",
       }}
     >
       <div
         style={{
           display: "flex",
-          alignItems: "flex-start",
+          alignItems: isMobile ? "flex-start" : "flex-start",
           gap: 12,
+          flexDirection: isMobile ? "column" : "row",
         }}
       >
-        {/* Performance badge */}
-        <div
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: perfColors[prompt.performance] || "#71717a",
-            marginTop: 6,
-            flexShrink: 0,
-          }}
-          title={`Performance: ${perfLabels[prompt.performance] || prompt.performance}`}
-        />
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Title row */}
+        <div style={{ display: "flex", gap: 12, flex: 1, minWidth: 0, width: isMobile ? "100%" : undefined }}>
+          {/* Performance badge */}
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 4,
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: perfColors[prompt.performance] || colors.muted,
+              marginTop: 6,
+              flexShrink: 0,
             }}
-          >
-            <span style={{ fontSize: 14, fontWeight: 600 }}>
-              {prompt.title || prompt.theme}
-            </span>
-            <span
+            title={`Performance: ${perfLabels[prompt.performance] || prompt.performance}`}
+          />
+
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {/* Title row */}
+            <div
               style={{
-                fontSize: 10,
-                fontWeight: 600,
-                color: perfColors[prompt.performance] || "#71717a",
-                textTransform: "uppercase",
-                padding: "1px 6px",
-                borderRadius: 4,
-                background: `${perfColors[prompt.performance] || "#71717a"}22`,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 4,
+                flexWrap: "wrap",
               }}
             >
-              {perfLabels[prompt.performance] || prompt.performance}
-            </span>
-          </div>
-
-          {/* Theme */}
-          <p
-            style={{
-              fontSize: 12,
-              color: "#71717a",
-              margin: "0 0 4px",
-            }}
-          >
-            Theme: {prompt.theme}
-            {prompt.style && ` — ${prompt.style}`}
-          </p>
-
-          {/* Image prompt (truncated) */}
-          <p
-            style={{
-              fontSize: 12,
-              color: "#52525b",
-              margin: "0 0 6px",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              maxWidth: 600,
-            }}
-            title={prompt.imagePrompt}
-          >
-            {prompt.imagePrompt}
-          </p>
-
-          {/* Stats row */}
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              fontSize: 11,
-              color: "#71717a",
-            }}
-          >
-            <span>Utilise {prompt.usedCount}x</span>
-            {prompt.impressions !== undefined && (
-              <span style={{ color: "#3b82f6" }}>
-                {prompt.impressions} impressions
+              <span style={{ fontSize: 14, fontWeight: 600 }}>
+                {prompt.title || prompt.theme}
               </span>
-            )}
-            {prompt.saves !== undefined && (
-              <span style={{ color: "#22c55e" }}>
-                {prompt.saves} saves
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: perfColors[prompt.performance] || colors.muted,
+                  textTransform: "uppercase",
+                  padding: "1px 6px",
+                  borderRadius: 4,
+                  background: `${perfColors[prompt.performance] || colors.muted}22`,
+                }}
+              >
+                {perfLabels[prompt.performance] || prompt.performance}
               </span>
-            )}
-            {prompt.clicks !== undefined && (
-              <span style={{ color: "#eab308" }}>
-                {prompt.clicks} clics
+            </div>
+
+            {/* Theme */}
+            <p
+              style={{
+                fontSize: 12,
+                color: colors.muted,
+                margin: "0 0 4px",
+              }}
+            >
+              Theme: {prompt.theme}
+              {prompt.style && ` — ${prompt.style}`}
+            </p>
+
+            {/* Image prompt (truncated) */}
+            <p
+              style={{
+                fontSize: 12,
+                color: colors.muted,
+                margin: "0 0 6px",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                maxWidth: isMobile ? "100%" : 600,
+                opacity: 0.6,
+              }}
+              title={prompt.imagePrompt}
+            >
+              {prompt.imagePrompt}
+            </p>
+
+            {/* Stats row */}
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                fontSize: 11,
+                color: colors.muted,
+                flexWrap: "wrap",
+              }}
+            >
+              <span>Utilise {prompt.usedCount}x</span>
+              {prompt.impressions !== undefined && (
+                <span style={{ color: "#3b82f6" }}>
+                  {prompt.impressions} impressions
+                </span>
+              )}
+              {prompt.saves !== undefined && (
+                <span style={{ color: "#22c55e" }}>
+                  {prompt.saves} saves
+                </span>
+              )}
+              {prompt.clicks !== undefined && (
+                <span style={{ color: colors.accent }}>
+                  {prompt.clicks} clics
+                </span>
+              )}
+              <span>
+                Cree le{" "}
+                {new Date(prompt.createdAt).toLocaleDateString("fr-FR")}
               </span>
-            )}
-            <span>
-              Cree le{" "}
-              {new Date(prompt.createdAt).toLocaleDateString("fr-FR")}
-            </span>
+            </div>
           </div>
         </div>
 
@@ -3134,12 +4343,14 @@ function PromptCard({
                 }}
                 disabled={deleting}
                 variant="danger"
+                colors={colors}
               >
                 {deleting ? "..." : "Confirmer"}
               </SmallButton>
               <SmallButton
                 onClick={() => setConfirmDel(false)}
                 variant="ghost"
+                colors={colors}
               >
                 Non
               </SmallButton>
@@ -3149,6 +4360,7 @@ function PromptCard({
               onClick={() => setConfirmDel(true)}
               variant="danger"
               title="Supprimer"
+              colors={colors}
             >
               Supprimer
             </SmallButton>
