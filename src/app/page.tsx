@@ -210,18 +210,22 @@ export default function Dashboard() {
   // -------------------------------------------------------------------------
 
   const fetchBoards = useCallback(async () => {
-    if (boardsLoaded) return;
+    if (boardsLoaded && boards.length > 0) return;
+    setBoardsLoaded(false);
     try {
       const res = await fetch("/api/marketing/pinterest/boards");
       if (res.ok) {
         const data = await res.json();
         setBoards(data.boards || []);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        console.warn("Board fetch error:", data.error || res.status);
       }
-    } catch {
-      /* silent */
+    } catch (err) {
+      console.warn("Board fetch failed:", err);
     }
     setBoardsLoaded(true);
-  }, [boardsLoaded]);
+  }, [boardsLoaded, boards.length]);
 
   // -------------------------------------------------------------------------
   // Mount

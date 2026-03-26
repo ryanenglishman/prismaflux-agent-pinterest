@@ -13,12 +13,25 @@ export async function getTokens(): Promise<PinterestTokens | null> {
   const redis = getRedis();
   if (!redis) return null;
 
-  const data = await redis.get<string>(TOKENS_KEY);
-  if (!data) return null;
+  try {
+    const data = await redis.get(TOKENS_KEY);
+    if (!data) return null;
 
-  return typeof data === "string"
-    ? (JSON.parse(data) as PinterestTokens)
-    : (data as unknown as PinterestTokens);
+    const parsed =
+      typeof data === "string" ? JSON.parse(data) : (data as PinterestTokens);
+
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      "accessToken" in parsed &&
+      "refreshToken" in parsed
+    ) {
+      return parsed as PinterestTokens;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 export async function deleteTokens(): Promise<void> {

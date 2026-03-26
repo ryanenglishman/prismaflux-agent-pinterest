@@ -4,6 +4,19 @@ import type { ScheduledPost } from "@/lib/marketing/pinterest/types";
 const POSTS_INDEX_KEY = "posts:index";
 const postKey = (id: string) => `posts:${id}`;
 
+function parsePost(data: unknown): ScheduledPost | null {
+  try {
+    const parsed =
+      typeof data === "string" ? JSON.parse(data) : (data as ScheduledPost);
+    if (parsed && typeof parsed === "object" && "id" in parsed && "name" in parsed) {
+      return parsed as ScheduledPost;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function listPosts(): Promise<ScheduledPost[]> {
   const redis = getRedis();
   if (!redis) return [];
@@ -13,13 +26,14 @@ export async function listPosts(): Promise<ScheduledPost[]> {
 
   const posts: ScheduledPost[] = [];
   for (const id of ids) {
-    const data = await redis.get<string>(postKey(id as string));
-    if (data) {
-      const post =
-        typeof data === "string"
-          ? (JSON.parse(data) as ScheduledPost)
-          : (data as unknown as ScheduledPost);
-      posts.push(post);
+    try {
+      const data = await redis.get(postKey(id as string));
+      const post = parsePost(data);
+      if (post) {
+        posts.push(post);
+      }
+    } catch {
+      // Skip corrupted entries
     }
   }
 
@@ -32,18 +46,19 @@ export async function getPost(id: string): Promise<ScheduledPost | null> {
   const redis = getRedis();
   if (!redis) return null;
 
-  const data = await redis.get<string>(postKey(id));
-  if (!data) return null;
-
-  return typeof data === "string"
-    ? (JSON.parse(data) as ScheduledPost)
-    : (data as unknown as ScheduledPost);
+  try {
+    const data = await redis.get(postKey(id));
+    return parsePost(data);
+  } catch {
+    return null;
+  }
 }
 
 export async function savePost(post: ScheduledPost): Promise<void> {
   const redis = getRedis();
   if (!redis) return;
 
+  // Atomic-ish: set data first, then add to index
   await redis.set(postKey(post.id), JSON.stringify(post));
   await redis.sadd(POSTS_INDEX_KEY, post.id);
 }
@@ -52,8 +67,9 @@ export async function deletePost(id: string): Promise<void> {
   const redis = getRedis();
   if (!redis) return;
 
-  await redis.del(postKey(id));
+  // Remove from index first, then delete data
   await redis.srem(POSTS_INDEX_KEY, id);
+  await redis.del(postKey(id));
 }
 
 export async function updatePostRunStatus(
