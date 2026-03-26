@@ -1422,52 +1422,7 @@ export default function Dashboard() {
           padding: `${padding}px ${isMobile ? 12 : 24}px`,
         }}
       >
-        {/* Auth compact banner — only when NOT connected */}
-        {!authLoading && !auth?.connected && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              background: dark ? "#1c1012" : "#fef2f2",
-              borderRadius: 10,
-              border: "1px solid #ef444444",
-              padding: "10px 16px",
-              marginBottom: isMobile ? 16 : 24,
-            }}
-          >
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: "#ef4444",
-                display: "inline-block",
-                flexShrink: 0,
-              }}
-            />
-            <span style={{ fontSize: 13, color: colors.muted, flex: 1 }}>
-              Non connecte
-            </span>
-            <a
-              href="/api/auth/pinterest"
-              style={{
-                background: "linear-gradient(135deg, #e63232, #ff4444)",
-                color: "#0a0a0f",
-                border: "none",
-                borderRadius: 8,
-                padding: "7px 16px",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                textDecoration: "none",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Connecter Pinterest
-            </a>
-          </div>
-        )}
+        {/* Auth banner moved inside Publications tab only */}
 
         {/* ================================================================= */}
         {/* KPI Dashboard (always visible above tabs)                         */}
@@ -1655,6 +1610,52 @@ export default function Dashboard() {
         {/* ================================================================= */}
         {activeTab === "publications" && (
           <section style={{ marginBottom: padding }}>
+            {/* Auth banner — only in Publications tab */}
+            {!authLoading && !auth?.connected && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  background: dark ? "#1c1012" : "#fef2f2",
+                  borderRadius: 10,
+                  border: "1px solid #ef444444",
+                  padding: "10px 16px",
+                  marginBottom: isMobile ? 16 : 24,
+                }}
+              >
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: "#ef4444",
+                    display: "inline-block",
+                    flexShrink: 0,
+                  }}
+                />
+                <span style={{ fontSize: 13, color: colors.muted, flex: 1 }}>
+                  Non connecte
+                </span>
+                <a
+                  href="/api/auth/pinterest"
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.accent}, #ff4444)`,
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "7px 16px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    textDecoration: "none",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Connecter Pinterest
+                </a>
+              </div>
+            )}
             {/* Post du jour */}
             <div
               style={{
