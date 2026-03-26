@@ -28,6 +28,7 @@ export interface LinkedInResult {
 export interface PipelineOptions {
   accessToken: string;
   boardId: string;
+  boardIds?: string[];
   theme?: string | null;
   customInstructions?: string | null;
   link?: string;
@@ -41,6 +42,8 @@ export interface PipelineResult {
   content?: PinterestContent;
   linkedin?: LinkedInResult;
   pin?: PinterestPinResult;
+  pins?: PinterestPinResult[];
+  imageBase64?: string;
   error?: string;
   durationMs: number;
   postName?: string;
@@ -60,6 +63,8 @@ export interface ScheduledPost {
   name: string;
   boardId: string;
   boardName: string;
+  boardIds?: string[];
+  boardNames?: string[];
   cronExpression: string;
   timezone: string;
   enabled: boolean;
@@ -92,4 +97,71 @@ export interface PinterestCreatePinPayload {
     data: string;
     content_type: "image/png" | "image/jpeg" | "image/webp";
   };
+}
+
+// ---------------------------------------------------------------------------
+// Preview / Batch
+// ---------------------------------------------------------------------------
+
+export interface PreviewData {
+  id: string;
+  postId: string;
+  prompt: PromptGenerationResult;
+  content: PinterestContent;
+  linkedin?: LinkedInResult;
+  imageBase64: string;
+  imageContentType: "image/png" | "image/jpeg" | "image/webp";
+  status: "pending" | "approved" | "rejected" | "published";
+  scheduledFor: string;
+  scheduledHour: number;
+  scheduledMinute: number;
+  createdAt: string;
+  variantIndex?: number;
+  variantTotal?: number;
+}
+
+export interface BatchConfig {
+  daysAhead: number;
+  postsPerDay: number;
+  boardId: string;
+  boardName: string;
+  boardIds?: string[];
+  boardNames?: string[];
+  theme?: string | null;
+  customInstructions?: string | null;
+  link: string;
+}
+
+// ---------------------------------------------------------------------------
+// Prompt Library
+// ---------------------------------------------------------------------------
+
+export interface SavedPrompt {
+  id: string;
+  imagePrompt: string;
+  theme: string;
+  style: string;
+  title: string;
+  description: string;
+  performance: "unknown" | "low" | "medium" | "high";
+  usedCount: number;
+  pinId?: string;
+  impressions?: number;
+  saves?: number;
+  clicks?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Analytics
+// ---------------------------------------------------------------------------
+
+export interface PinAnalytics {
+  pinId: string;
+  impressions: number;
+  saves: number;
+  clicks: number;
+  comments: number;
+  date: string;
 }
