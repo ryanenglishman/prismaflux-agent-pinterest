@@ -49,7 +49,7 @@ export default function PublicStatsPage() {
   const border = dark ? "#27272a" : "#e4e4e7";
   const text = dark ? "#e4e4e7" : "#18181b";
   const muted = dark ? "#71717a" : "#a1a1aa";
-  const accent = "#eab308";
+  const accent = "#e63232";
 
   const fmt = (n: number) =>
     n >= 1000000
@@ -70,7 +70,7 @@ export default function PublicStatsPage() {
     <div style={{ minHeight: "100vh", background: bg, color: text, fontFamily: "system-ui, -apple-system, sans-serif" }}>
       {/* Header */}
       <header style={{ padding: "24px 32px", borderBottom: `1px solid ${border}`, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${accent}, #f59e0b)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: "#0a0a0f" }}>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${accent}, #ff4444)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: "#0a0a0f" }}>
           P
         </div>
         <div style={{ flex: 1 }}>

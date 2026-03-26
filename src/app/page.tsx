@@ -220,7 +220,7 @@ const DARK_COLORS: ThemeColors = {
   border: "#27272a",
   text: "#e4e4e7",
   muted: "#71717a",
-  accent: "#eab308",
+  accent: "#e63232",
 };
 
 const LIGHT_COLORS: ThemeColors = {
@@ -229,7 +229,7 @@ const LIGHT_COLORS: ThemeColors = {
   border: "#e4e4e7",
   text: "#18181b",
   muted: "#a1a1aa",
-  accent: "#eab308",
+  accent: "#e63232",
 };
 
 // ---------------------------------------------------------------------------
@@ -297,7 +297,7 @@ function timeUntil(iso: string): string {
 }
 
 const statusColors: Record<string, string> = {
-  pending: "#eab308",
+  pending: "#e63232",
   approved: "#22c55e",
   rejected: "#ef4444",
   published: "#3b82f6",
@@ -313,7 +313,7 @@ const statusLabels: Record<string, string> = {
 const perfColors: Record<string, string> = {
   unknown: "#71717a",
   low: "#ef4444",
-  medium: "#eab308",
+  medium: "#e63232",
   high: "#22c55e",
 };
 
@@ -1181,7 +1181,7 @@ export default function Dashboard() {
             width: 36,
             height: 36,
             borderRadius: 10,
-            background: "linear-gradient(135deg, #eab308, #f59e0b)",
+            background: "linear-gradient(135deg, #e63232, #ff4444)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -1300,7 +1300,7 @@ export default function Dashboard() {
                     width: 10,
                     height: 10,
                     borderRadius: "50%",
-                    background: auth.needsReauth ? "#f59e0b" : "#22c55e",
+                    background: auth.needsReauth ? "#ff4444" : "#22c55e",
                     display: "inline-block",
                     flexShrink: 0,
                   }}
@@ -1312,7 +1312,7 @@ export default function Dashboard() {
                   <span
                     style={{
                       fontSize: 13,
-                      color: auth.needsReauth ? "#f59e0b" : colors.muted,
+                      color: auth.needsReauth ? "#ff4444" : colors.muted,
                       marginLeft: 12,
                     }}
                   >
@@ -1326,7 +1326,7 @@ export default function Dashboard() {
                     href="/api/auth/pinterest"
                     style={{
                       background:
-                        "linear-gradient(135deg, #eab308, #f59e0b)",
+                        "linear-gradient(135deg, #e63232, #ff4444)",
                       color: "#0a0a0f",
                       border: "none",
                       borderRadius: 8,
@@ -1376,7 +1376,7 @@ export default function Dashboard() {
                   href="/api/auth/pinterest"
                   style={{
                     background:
-                      "linear-gradient(135deg, #eab308, #f59e0b)",
+                      "linear-gradient(135deg, #e63232, #ff4444)",
                     color: "#0a0a0f",
                     border: "none",
                     borderRadius: 8,
@@ -1434,7 +1434,7 @@ export default function Dashboard() {
             <KpiCard
               label="Posts en attente"
               value={String(kpiData.pendingCount)}
-              color="#f59e0b"
+              color="#ff4444"
               colors={colors}
             />
           </div>
@@ -1577,7 +1577,7 @@ export default function Dashboard() {
                         height: isMobile ? 140 : 120,
                         borderRadius: 8,
                         background:
-                          "linear-gradient(135deg, #eab30833, #3b82f633)",
+                          "linear-gradient(135deg, #e6323233, #3b82f633)",
                         flexShrink: 0,
                       }}
                     />
@@ -1679,7 +1679,7 @@ export default function Dashboard() {
                     onClick={openCreateForm}
                     style={{
                       background:
-                        "linear-gradient(135deg, #eab308, #f59e0b)",
+                        "linear-gradient(135deg, #e63232, #ff4444)",
                       color: "#0a0a0f",
                       border: "none",
                       borderRadius: 8,
@@ -1712,7 +1712,7 @@ export default function Dashboard() {
                 onClick={openCreateForm}
                 style={{
                   background:
-                    "linear-gradient(135deg, #eab308, #f59e0b)",
+                    "linear-gradient(135deg, #e63232, #ff4444)",
                   color: "#0a0a0f",
                   border: "none",
                   borderRadius: 8,
@@ -1988,7 +1988,7 @@ export default function Dashboard() {
                     style={{
                       background: formSaving
                         ? colors.border
-                        : "linear-gradient(135deg, #eab308, #f59e0b)",
+                        : "linear-gradient(135deg, #e63232, #ff4444)",
                       color: formSaving ? colors.muted : "#0a0a0f",
                       border: "none",
                       borderRadius: 8,
@@ -2152,7 +2152,7 @@ export default function Dashboard() {
                     background:
                       batchLoading || !batchBoardId
                         ? colors.border
-                        : "linear-gradient(135deg, #eab308, #f59e0b)",
+                        : "linear-gradient(135deg, #e63232, #ff4444)",
                     color:
                       batchLoading || !batchBoardId
                         ? colors.muted
@@ -2743,7 +2743,7 @@ export default function Dashboard() {
                           width: "100%",
                           height: 160,
                           background:
-                            "linear-gradient(135deg, #ef444433, #eab30833)",
+                            "linear-gradient(135deg, #ef444433, #e6323233)",
                         }}
                       />
                     )}
@@ -2814,7 +2814,7 @@ export default function Dashboard() {
                 style={{
                   background: testLoading
                     ? colors.border
-                    : "linear-gradient(135deg, #eab308, #f59e0b)",
+                    : "linear-gradient(135deg, #e63232, #ff4444)",
                   color: testLoading ? colors.muted : "#0a0a0f",
                   border: "none",
                   borderRadius: 10,
@@ -4110,7 +4110,7 @@ function PreviewModal({
                 style={{
                   background: actionLoading
                     ? colors.border
-                    : "linear-gradient(135deg, #eab308, #f59e0b)",
+                    : "linear-gradient(135deg, #e63232, #ff4444)",
                   color: actionLoading ? colors.muted : "#0a0a0f",
                   border: "none",
                   borderRadius: 8,
