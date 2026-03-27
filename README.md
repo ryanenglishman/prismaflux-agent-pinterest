@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PrismaFlux — Agent Pinterest
 
-## Getting Started
+Agent automatise qui publie chaque jour a 18h une image IA + contenu optimise sur Pinterest.
 
-First, run the development server:
+> **Note horaire** : Le cron Vercel est en UTC (`0 16 * * *` = 16h UTC).
+> En ete (CEST, UTC+2) = **18h**. En hiver (CET, UTC+1) = **17h**.
+> Pour garder 18h toute l'annee, changer en `0 17 * * *` fin octobre et `0 16 * * *` fin mars.
+
+## Pipeline
+
+1. **GPT-4o** genere un prompt image creatif (8 themes rotatifs automobile/IA/concessionnaire)
+2. **gpt-image-1** cree une image portrait 1024x1536 (ratio 2:3 Pinterest)
+3. **GPT-4o** redige titre + description FR + hashtags SEO
+4. **Pinterest API v5** poste le pin sur le tableau cible
+5. **Vercel Cron** declenche le pipeline tous les jours a 18h CET
+
+## Setup
+
+### 1. Variables d'environnement
+
+Copier `.env.example` vers `.env` et remplir les valeurs :
+
+```bash
+cp .env.example .env
+```
+
+### 2. Obtenir le Pinterest Access Token
+
+1. Aller sur https://developers.pinterest.com
+2. Ouvrir ton app > onglet "Generate token"
+3. Selectionner les scopes : `boards:read`, `pins:read`, `pins:write`
+4. Copier le token dans `PINTEREST_ACCESS_TOKEN`
+
+### 3. Trouver le Board ID
+
+Demarrer le serveur et appeler l'endpoint boards :
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+curl http://localhost:3000/api/marketing/pinterest/boards
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Copier l'`id` du tableau cible dans `PINTEREST_BOARD_ID`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 4. Generer le CRON_SECRET
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+openssl rand -hex 32
+```
 
-## Learn More
+Copier la valeur dans `CRON_SECRET`.
 
-To learn more about Next.js, take a look at the following resources:
+## Endpoints
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Route | Methode | Usage |
+|-------|---------|-------|
+| `/api/marketing/pinterest/generate` | `GET` | Cron Vercel (auth Bearer CRON_SECRET) |
+| `/api/marketing/pinterest/generate` | `POST` | Declenchement manuel |
+| `/api/marketing/pinterest/test` | `POST` | Test complet sans publier sur Pinterest |
+| `/api/marketing/pinterest/boards` | `GET` | Lister les boards Pinterest |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deploiement Vercel
 
-## Deploy on Vercel
+1. Importer le repo sur Vercel (branche `feat/pinterest-agent`)
+2. Ajouter les 4 variables d'environnement dans Settings > Environment Variables
+3. Deployer — le cron `vercel.json` est detecte automatiquement
+4. Verifier dans Vercel Dashboard > Cron Jobs que le job est actif
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Dev local
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm install
+npm run dev
+```
+
+Tester le pipeline sans publier :
+
+```bash
+curl -X POST http://localhost:3000/api/marketing/pinterest/test
+```
