@@ -38,6 +38,9 @@ yarn-error.log*
 # claude code
 .claude/
 
+# claude code
+.claude/
+
 # vercel
 .vercel
 

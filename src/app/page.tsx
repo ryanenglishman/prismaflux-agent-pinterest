@@ -1,5209 +1,656 @@
-"use client";
+import Link from "next/link";
+import {
+  Sparkles,
+  Heart,
+  Star,
+  ArrowRight,
+  Clock,
+  Shield,
+  Gem,
+  Droplets,
+  Hand,
+  Eye,
+  Leaf,
+  Award,
+  CheckCircle,
+  Quote,
+  Flower2,
+  Sun,
+} from "lucide-react";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+/* ── Data ──────────────────────────────────────────────────────────────── */
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface AuthStatus {
-  connected: boolean;
-  username?: string | null;
-  daysUntilExpiry?: number;
-  needsReauth?: boolean;
-  refreshExpired?: boolean;
-}
-
-interface PinterestBoard {
-  id: string;
-  name: string;
-  description: string;
-  pinCount: number;
-}
-
-interface ScheduledPost {
-  id: string;
-  name: string;
-  boardId: string;
-  boardName: string;
-  boardIds?: string[];
-  boardNames?: string[];
-  cronExpression: string;
-  timezone: string;
-  enabled: boolean;
-  theme: string | null;
-  customInstructions: string | null;
-  link: string;
-  lastRunAt: string | null;
-  lastRunStatus: "success" | "error" | null;
-  lastRunError: string | null;
-  lastPinId: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface PipelineResult {
-  success: boolean;
-  prompt?: { imagePrompt: string; theme: string; style: string };
-  content?: { title: string; description: string; altText: string };
-  linkedin?: { post: string };
-  pin?: { pinId: string; createdAt: string };
-  pins?: { pinId: string; createdAt: string }[];
-  social?: SocialExportData;
-  imageBase64?: string;
-  trackedLink?: string;
-  error?: string;
-  durationMs: number;
-  postName?: string;
-}
-
-interface PreviewData {
-  id: string;
-  postId: string;
-  prompt: { imagePrompt: string; theme: string; style: string };
-  content: { title: string; description: string; altText: string };
-  linkedin?: { post: string };
-  social?: SocialExportData;
-  imageBase64: string;
-  imageContentType: string;
-  status: "pending" | "approved" | "rejected" | "published";
-  scheduledFor: string;
-  scheduledHour: number;
-  scheduledMinute: number;
-  createdAt: string;
-  variantIndex?: number;
-  variantTotal?: number;
-}
-
-interface SavedPrompt {
-  id: string;
-  imagePrompt: string;
-  theme: string;
-  style: string;
-  title: string;
-  description: string;
-  performance: "unknown" | "low" | "medium" | "high";
-  usedCount: number;
-  pinId?: string;
-  impressions?: number;
-  saves?: number;
-  clicks?: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface PinAnalytics {
-  pinId: string;
-  impressions: number;
-  saves: number;
-  clicks: number;
-  comments: number;
-  date: string;
-}
-
-interface TimeSuggestion {
-  hour: number;
-  minute: number;
-  score: number;
-  reason: string;
-  source: string;
-}
-
-interface SocialExportData {
-  linkedin: string;
-  instagram: string;
-  facebook: string;
-}
-
-interface SocialExport {
-  linkedin: string;
-  instagram: string;
-  facebook: string;
-}
-
-interface PostForm {
-  name: string;
-  boardIds: string[];
-  boardNames: string[];
-  cronExpression: string;
-  theme: string;
-  customInstructions: string;
-  link: string;
-  promptStyle: string;
-}
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const THEMES = [
-  "Concession automobile futuriste avec technologie IA",
-  "Tableau de bord digital de performance et rotation des stocks",
-  "Intelligence artificielle au service des concessionnaires",
-  "Vente automobile acceleree par la data et l'automatisation",
-  "Transformation digitale du marche automobile",
-  "Croissance et scaling d'une concession grace a l'IA",
-  "Optimisation du temps pour les professionnels de l'automobile",
-  "PrismaFlux - lumiere, prismes et innovation automobile",
-  "Multidiffusion automatique d'annonces sur toutes les plateformes auto",
-  "Retouche photo IA et studio visuel pour vehicules d'occasion",
-  "Analyse de performance web et SEO local pour concessions automobiles",
-  "Audit gratuit de site web pour professionnels de l'automobile",
-  "Reporting dirigeant et reputation en ligne pour concessionnaires",
-  "Gestion intelligente du stock et acceleration de la rotation vehicules",
+const heroStats = [
+  { value: "4.9/5", label: "Avis clients", icon: Star },
+  { value: "30+", label: "Soins proposés", icon: Sparkles },
+  { value: "100%", label: "Recommandation", icon: Heart },
 ];
 
-const PROMPT_STYLES = [
-  "PrismaFlux",
-  "Storytelling",
-  "Expert",
-  "Humour",
-  "Urgence/FOMO",
-  "Inspirant",
-  "Educatif",
-  "Provoquant/Challenger",
+const expertises = [
+  {
+    icon: Droplets,
+    title: "Hydradermabrasion",
+    subtitle: "Technologie Signature",
+    description:
+      "Notre soin phare allie aspiration, exfoliation et infusion de sérums actifs pour une peau nettoyée en profondeur, décongestionée et intensément hydratée. Un éclat visible dès la première séance.",
+    price: "dès 85 €",
+    accent: "from-blue-100/40 to-cyan-50/40",
+  },
+  {
+    icon: Eye,
+    title: "Beauté du Regard",
+    subtitle: "Lashlift & Browlift",
+    description:
+      "Rehaussement de cils classique ou Korean Lashlift, restructuration et teinture des sourcils. Des techniques douces et précises pour un regard ouvert, intense et naturellement sublimé.",
+    price: "dès 50 €",
+    accent: "from-purple-50/40 to-pink-50/40",
+  },
+  {
+    icon: Sparkles,
+    title: "Soins Visage Experts",
+    subtitle: "Rituels sur mesure",
+    description:
+      "Du soin traditionnel au lifting japonais Kobido, chaque protocole est adapté à votre type de peau. Nettoyage, exfoliation, masque, sérum — votre peau retrouve son équilibre naturel.",
+    price: "dès 35 €",
+    accent: "from-amber-50/40 to-yellow-50/40",
+  },
+  {
+    icon: Hand,
+    title: "Massages & Bien-être",
+    subtitle: "Corps & esprit",
+    description:
+      "Massage relaxant du corps complet, drainage des jambes, massage crânien ou énergétique. Un moment de détente profonde où tensions et stress se dissolvent.",
+    price: "dès 50 €",
+    accent: "from-emerald-50/40 to-teal-50/40",
+  },
+  {
+    icon: Gem,
+    title: "Maquillage Professionnel",
+    subtitle: "Événements & mariages",
+    description:
+      "Sublimez votre beauté naturelle pour vos événements les plus précieux. Maquillage mariée, soirée ou essai complet — un résultat lumineux et longue tenue.",
+    price: "dès 50 €",
+    accent: "from-rose-50/40 to-pink-50/40",
+  },
+  {
+    icon: Award,
+    title: "Formations & Ateliers",
+    subtitle: "Transmettez & apprenez",
+    description:
+      "Cours d'auto-maquillage, formation Korean Lashlift ou soin visage. Développez vos compétences beauté aux côtés d'une professionnelle passionnée et expérimentée.",
+    price: "dès 120 €",
+    accent: "from-orange-50/40 to-amber-50/40",
+  },
 ];
 
-const SCHEDULE_OPTIONS = [
-  { label: "Tous les jours a 10h", value: "0 8 * * *" },
-  { label: "Tous les jours a 12h", value: "0 10 * * *" },
-  { label: "Tous les jours a 14h", value: "0 12 * * *" },
-  { label: "Tous les jours a 16h", value: "0 14 * * *" },
-  { label: "Tous les jours a 18h", value: "0 16 * * *" },
-  { label: "Tous les jours a 20h", value: "0 18 * * *" },
-  { label: "Lundi au vendredi a 10h", value: "0 8 * * 1-5" },
-  { label: "Lundi au vendredi a 18h", value: "0 16 * * 1-5" },
-  { label: "Lundi, mercredi, vendredi a 14h", value: "0 12 * * 1,3,5" },
-  { label: "Toutes les 6 heures", value: "0 */6 * * *" },
-  { label: "Toutes les 12 heures", value: "0 */12 * * *" },
+const ritualSteps = [
+  {
+    step: "01",
+    title: "Accueil & Diagnostic",
+    description:
+      "Un moment d'échange pour comprendre votre peau, vos attentes et définir ensemble le protocole idéal. Analyse de votre type de peau, de vos préoccupations cutanées et de votre routine actuelle.",
+    icon: Flower2,
+  },
+  {
+    step: "02",
+    title: "Rituel de Soin",
+    description:
+      "Installation dans notre cabine confidentielle, musique apaisante, lumière tamisée. Chaque geste est réalisé avec précision et douceur — nettoyage, exfoliation, soin ciblé, massage.",
+    icon: Sparkles,
+  },
+  {
+    step: "03",
+    title: "Résultat & Conseils",
+    description:
+      "Votre peau est transformée, votre teint est lumineux. Jessica vous accompagne avec des conseils personnalisés pour prolonger les bienfaits du soin à la maison.",
+    icon: Sun,
+  },
 ];
 
-const TAB_LIST = [
-  { key: "publications", label: "Publications" },
-  { key: "calendrier", label: "Calendrier" },
-  { key: "prompts", label: "Prompts" },
-  { key: "perdus", label: "Perdus" },
-  { key: "test", label: "Test" },
-] as const;
-
-type TabKey = (typeof TAB_LIST)[number]["key"];
-
-const DAYS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-const DAYS_FR_FULL = [
-  "dimanche",
-  "lundi",
-  "mardi",
-  "mercredi",
-  "jeudi",
-  "vendredi",
-  "samedi",
+const whyUs = [
+  {
+    icon: Heart,
+    title: "Approche skin-first",
+    text: "Nous analysons et comprenons votre peau avant chaque soin. Pas de solutions standardisées — un protocole personnalisé qui respecte l'équilibre naturel de votre épiderme.",
+  },
+  {
+    icon: Leaf,
+    title: "Cosmétiques haut de gamme",
+    text: "Des produits professionnels haute performance, choisis pour leur efficacité et leur respect de la peau. Aucun compromis entre résultat et douceur.",
+  },
+  {
+    icon: Shield,
+    title: "Expertise & formation continue",
+    text: "Jessica se forme constamment aux dernières techniques : Korean Lashlift, Kobido, hydradermabrasion de nouvelle génération. L'innovation au service de votre beauté.",
+  },
+  {
+    icon: Clock,
+    title: "Un cocon hors du temps",
+    text: "Plus qu'un institut, un espace intime et chaleureux où chaque visite devient un rituel de bien-être. Prenez le temps de prendre soin de vous.",
+  },
 ];
 
-const EMPTY_FORM: PostForm = {
-  name: "",
-  boardIds: [],
-  boardNames: [],
-  cronExpression: "0 16 * * *",
-  theme: "",
-  customInstructions: "",
-  link: "https://auto-prismaflux.com",
-  promptStyle: "PrismaFlux",
-};
+const testimonials = [
+  {
+    name: "Sophie L.",
+    service: "Hydra GINGER Signature",
+    text: "Un accueil chaleureux, des soins professionnels et des résultats visibles dès la première séance. Ma peau n'a jamais été aussi éclatante. Je recommande à 100% !",
+    rating: 5,
+  },
+  {
+    name: "Marie D.",
+    service: "Korean Lashlift",
+    text: "Jessica prend le temps d'expliquer chaque étape du soin. On se sent en confiance et les résultats sont au rendez-vous. Mon regard est transformé, naturellement.",
+    rating: 5,
+  },
+  {
+    name: "Nathalie B.",
+    service: "Lifting Kobido",
+    text: "Le lifting japonais Kobido est une vraie révélation. Mon visage est plus ferme, les traits lissés, et ce moment de détente est un pur bonheur. Un rituel dont je ne peux plus me passer.",
+    rating: 5,
+  },
+  {
+    name: "Céline M.",
+    service: "Massage complet",
+    text: "Un vrai cocon de douceur. Le massage complet du corps m'a permis de relâcher toutes mes tensions. L'ambiance, les produits, les mains expertes — tout est parfait.",
+    rating: 5,
+  },
+];
 
-// ---------------------------------------------------------------------------
-// Theme Colors
-// ---------------------------------------------------------------------------
+const skinConcerns = [
+  "Peau terne & fatiguée",
+  "Rides & ridules",
+  "Pores dilatés",
+  "Taches pigmentaires",
+  "Peau déshydratée",
+  "Teint irrégulier",
+  "Peau sensible & réactive",
+  "Relâchement cutané",
+];
 
-interface ThemeColors {
-  bg: string;
-  card: string;
-  border: string;
-  text: string;
-  muted: string;
-  accent: string;
-}
+/* ── Page ──────────────────────────────────────────────────────────────── */
 
-const DARK_COLORS: ThemeColors = {
-  bg: "#0a0a0f",
-  card: "#18181b",
-  border: "#27272a",
-  text: "#e4e4e7",
-  muted: "#71717a",
-  accent: "#e63232",
-};
-
-const LIGHT_COLORS: ThemeColors = {
-  bg: "#f4f4f5",
-  card: "#ffffff",
-  border: "#e4e4e7",
-  text: "#18181b",
-  muted: "#a1a1aa",
-  accent: "#e63232",
-};
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function cronToHuman(cron: string): string {
-  const match = SCHEDULE_OPTIONS.find((o) => o.value === cron);
-  if (match) return match.label;
-  return cron;
-}
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return "a l'instant";
-  if (minutes < 60) return `il y a ${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `il y a ${hours}h`;
-  const days = Math.floor(hours / 24);
-  return `il y a ${days}j`;
-}
-
-function getWeekDays(weeksAhead: number): Date[] {
-  const now = new Date();
-  const dayOfWeek = now.getDay();
-  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + mondayOffset + weeksAhead * 7);
-  monday.setHours(0, 0, 0, 0);
-  const days: Date[] = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    days.push(d);
-  }
-  return days;
-}
-
-function isSameDay(a: Date, b: Date): boolean {
+export default function HomePage() {
   return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function formatDateShort(d: Date): string {
-  return `${d.getDate()}/${d.getMonth() + 1}`;
-}
-
-function padTime(n: number): string {
-  return n.toString().padStart(2, "0");
-}
-
-function timeUntil(iso: string): string {
-  const diff = new Date(iso).getTime() - Date.now();
-  if (diff <= 0) return "imminent";
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  return `${days}j`;
-}
-
-const statusColors: Record<string, string> = {
-  pending: "#e63232",
-  approved: "#22c55e",
-  rejected: "#ef4444",
-  published: "#3b82f6",
-};
-
-const statusLabels: Record<string, string> = {
-  pending: "En attente",
-  approved: "Approuve",
-  rejected: "Rejete",
-  published: "Publie",
-};
-
-const perfColors: Record<string, string> = {
-  unknown: "#71717a",
-  low: "#ef4444",
-  medium: "#e63232",
-  high: "#22c55e",
-};
-
-const perfLabels: Record<string, string> = {
-  unknown: "Inconnu",
-  low: "Faible",
-  medium: "Moyen",
-  high: "Eleve",
-};
-
-// ---------------------------------------------------------------------------
-// Hook: useIsMobile
-// ---------------------------------------------------------------------------
-
-function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    function check() {
-      setIsMobile(window.innerWidth < 768);
-    }
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
-
-  return isMobile;
-}
-
-// ---------------------------------------------------------------------------
-// Main Component
-// ---------------------------------------------------------------------------
-
-export default function Dashboard() {
-  const isMobile = useIsMobile();
-
-  // Theme
-  const [dark, setDark] = useState(true);
-  const colors = dark ? DARK_COLORS : LIGHT_COLORS;
-
-  // Tab
-  const [activeTab, setActiveTab] = useState<TabKey>("publications");
-
-  // Auth
-  const [auth, setAuth] = useState<AuthStatus | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-
-  // Posts
-  const [posts, setPosts] = useState<ScheduledPost[]>([]);
-  const [postsLoading, setPostsLoading] = useState(true);
-
-  // Boards
-  const [boards, setBoards] = useState<PinterestBoard[]>([]);
-  const [boardsLoaded, setBoardsLoaded] = useState(false);
-
-  // Form
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<PostForm>({ ...EMPTY_FORM });
-  const [formSaving, setFormSaving] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-
-  // Running / deleting
-  const [runningId, setRunningId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [togglingId, setTogglingId] = useState<string | null>(null);
-
-  // Run result (inline per post)
-  const [runResult, setRunResult] = useState<{
-    postId: string;
-    result: PipelineResult;
-  } | null>(null);
-
-  // Test
-  const [testLoading, setTestLoading] = useState(false);
-  const [testResult, setTestResult] = useState<PipelineResult | null>(null);
-
-  // Confirm delete
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-
-  // Previews
-  const [previews, setPreviews] = useState<PreviewData[]>([]);
-  const [previewsLoading, setPreviewsLoading] = useState(false);
-
-  // Preview modal
-  const [previewModalData, setPreviewModalData] = useState<PreviewData | null>(
-    null,
-  );
-  const [previewModalVariants, setPreviewModalVariants] = useState<
-    PreviewData[]
-  >([]);
-  const [previewVariantTab, setPreviewVariantTab] = useState(0);
-  const [previewActionLoading, setPreviewActionLoading] = useState(false);
-
-  // Batch
-  const [batchLoading, setBatchLoading] = useState(false);
-  const [batchBoardId, setBatchBoardId] = useState("");
-  const [batchResult, setBatchResult] = useState<string | null>(null);
-
-  // Prompts
-  const [prompts, setPrompts] = useState<SavedPrompt[]>([]);
-  const [promptsLoading, setPromptsLoading] = useState(false);
-  const [promptsOpen, setPromptsOpen] = useState(true);
-  const [deletingPromptId, setDeletingPromptId] = useState<string | null>(null);
-
-  // Analytics cache per pinId
-  const [analyticsCache, setAnalyticsCache] = useState<
-    Record<string, PinAnalytics>
-  >({});
-
-  // Calendar week offset (0 = this week, 1 = next week)
-  const [calendarWeekOffset, setCalendarWeekOffset] = useState(0);
-
-  // KPI expanded
-  const [kpiExpanded, setKpiExpanded] = useState(false);
-
-  // Suggestion banner
-  const [suggestion, setSuggestion] = useState<string | null>(null);
-
-  // Export modal
-  const [exportData, setExportData] = useState<SocialExport | null>(null);
-  const [exportLoading, setExportLoading] = useState(false);
-  const [exportCopied, setExportCopied] = useState<string | null>(null);
-
-  // Rapid approval mode (calendrier)
-  const [rapidMode, setRapidMode] = useState(false);
-  const [rapidIndex, setRapidIndex] = useState(0);
-
-  // Platform tabs (Post du jour + PreviewModal)
-  const [platformTab, setPlatformTab] = useState<"pinterest" | "linkedin" | "instagram" | "facebook">("pinterest");
-  const [modalPlatformTab, setModalPlatformTab] = useState<"pinterest" | "linkedin" | "instagram" | "facebook">("pinterest");
-
-  // Auth dropdown
-  const [authDropdownOpen, setAuthDropdownOpen] = useState(false);
-
-  // SEO tips
-  const [seoTipsOpen, setSeoTipsOpen] = useState(false);
-
-  // Platform tab copy state
-  const [platformCopied, setPlatformCopied] = useState<string | null>(null);
-
-  // Guardrails
-  const [guards, setGuards] = useState<{
-    allowed: boolean;
-    reason?: string;
-    dailyCount: number;
-    dailyMax: number;
-    monthlyCount: number;
-    monthlyMax: number;
-    estimatedCost: number;
-    cooldownWait: number;
-    killSwitch: boolean;
-  } | null>(null);
-
-  // Republication
-  const [republishStrategy, setRepublishStrategy] = useState<string | null>(null);
-  const [republishLoading, setRepublishLoading] = useState(false);
-  const [republishResult, setRepublishResult] = useState<{ success: boolean; message?: string; pinId?: string } | null>(null);
-  const [republishPreviewId, setRepublishPreviewId] = useState("");
-  const [republishBoardId, setRepublishBoardId] = useState("");
-
-  // SEO tips array
-  const SEO_TIPS = useMemo(() => [
-    "Publiez entre 20h-21h pour maximiser l'engagement",
-    "Utilisez 4-5 hashtags pertinents par publication",
-    "Incluez auto-prismaflux.com dans vos descriptions",
-    "Ajoutez des mots-cles automobile et IA dans le titre",
-    "Les images verticales (2:3) performent mieux sur Pinterest",
-    "Redigez des descriptions de 150-300 caracteres",
-    "Variez les themes visuels pour toucher plus d'audience",
-    "Epinglez dans plusieurs tableaux pour plus de visibilite",
-  ], []);
-
-  const todaySeoTips = useMemo(() => {
-    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-    const start = dayOfYear % SEO_TIPS.length;
-    const tips: string[] = [];
-    for (let i = 0; i < 3; i++) {
-      tips.push(SEO_TIPS[(start + i) % SEO_TIPS.length]);
-    }
-    return tips;
-  }, [SEO_TIPS]);
-
-  // -------------------------------------------------------------------------
-  // Fetch Auth
-  // -------------------------------------------------------------------------
-
-  const fetchAuth = useCallback(async () => {
-    setAuthLoading(true);
-    try {
-      const res = await fetch("/api/auth/pinterest/status");
-      const data = await res.json();
-      setAuth(data);
-    } catch {
-      setAuth({ connected: false });
-    }
-    setAuthLoading(false);
-  }, []);
-
-  // -------------------------------------------------------------------------
-  // Fetch Posts
-  // -------------------------------------------------------------------------
-
-  const fetchPosts = useCallback(async () => {
-    setPostsLoading(true);
-    try {
-      const res = await fetch("/api/posts");
-      const data = await res.json();
-      setPosts(data.posts || []);
-    } catch {
-      setPosts([]);
-    }
-    setPostsLoading(false);
-  }, []);
-
-  // -------------------------------------------------------------------------
-  // Fetch Boards
-  // -------------------------------------------------------------------------
-
-  const fetchBoards = useCallback(async () => {
-    if (boardsLoaded && boards.length > 0) return;
-    setBoardsLoaded(false);
-    try {
-      const res = await fetch("/api/marketing/pinterest/boards");
-      if (res.ok) {
-        const data = await res.json();
-        setBoards(data.boards || []);
-      } else {
-        const data = await res.json().catch(() => ({}));
-        console.warn("Board fetch error:", data.error || res.status);
-      }
-    } catch (err) {
-      console.warn("Board fetch failed:", err);
-    }
-    setBoardsLoaded(true);
-  }, [boardsLoaded, boards.length]);
-
-  // -------------------------------------------------------------------------
-  // Fetch Previews
-  // -------------------------------------------------------------------------
-
-  const fetchPreviews = useCallback(async () => {
-    setPreviewsLoading(true);
-    try {
-      const res = await fetch("/api/previews");
-      if (res.ok) {
-        const data = await res.json();
-        setPreviews(data.previews || []);
-      }
-    } catch {
-      /* silent */
-    }
-    setPreviewsLoading(false);
-  }, []);
-
-  // -------------------------------------------------------------------------
-  // Fetch Prompts
-  // -------------------------------------------------------------------------
-
-  const fetchPrompts = useCallback(async () => {
-    setPromptsLoading(true);
-    try {
-      const res = await fetch("/api/prompts");
-      if (res.ok) {
-        const data = await res.json();
-        setPrompts(data.prompts || []);
-      }
-    } catch {
-      /* silent */
-    }
-    setPromptsLoading(false);
-  }, []);
-
-  // -------------------------------------------------------------------------
-  // Fetch Analytics for a pinId
-  // -------------------------------------------------------------------------
-
-  const fetchAnalytics = useCallback(
-    async (pinId: string) => {
-      if (analyticsCache[pinId]) return;
-      try {
-        const res = await fetch(
-          `/api/analytics?pinId=${encodeURIComponent(pinId)}`,
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setAnalyticsCache((prev) => ({ ...prev, [pinId]: data }));
-        }
-      } catch {
-        /* silent */
-      }
-    },
-    [analyticsCache],
-  );
-
-  // -------------------------------------------------------------------------
-  // Fetch Suggestion
-  // -------------------------------------------------------------------------
-
-  const fetchSuggestion = useCallback(async () => {
-    try {
-      const day = new Date().getDay();
-      const res = await fetch(`/api/suggestions?day=${day}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.recommendation) {
-          const dayName = DAYS_FR_FULL[new Date().getDay()];
-          const rec = data.recommendation;
-          const best = data.suggestions?.[0] as TimeSuggestion | undefined;
-          if (best) {
-            setSuggestion(
-              `Creneau recommande pour ${dayName} : ${padTime(best.hour)}h${padTime(best.minute)} (score ${best.score}/100). ${rec}`,
-            );
-          } else {
-            setSuggestion(rec);
-          }
-        }
-      }
-    } catch {
-      /* silent */
-    }
-  }, []);
-
-  // -------------------------------------------------------------------------
-  // Fetch Guardrails
-  // -------------------------------------------------------------------------
-
-  const fetchGuardrails = useCallback(async () => {
-    try {
-      const res = await fetch("/api/guardrails");
-      if (res.ok) {
-        const data = await res.json();
-        setGuards(data.guards || null);
-      }
-    } catch {
-      /* silent */
-    }
-  }, []);
-
-  // -------------------------------------------------------------------------
-  // Kill Switch Toggle
-  // -------------------------------------------------------------------------
-
-  async function killSwitchToggle() {
-    if (!guards) return;
-    try {
-      const res = await fetch("/api/guardrails", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ killSwitch: !guards.killSwitch }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setGuards(data.guards || null);
-      }
-    } catch {
-      /* silent */
-    }
-  }
-
-  // -------------------------------------------------------------------------
-  // Republish Handler
-  // -------------------------------------------------------------------------
-
-  async function handleRepublish(strategy: string) {
-    if (!republishPreviewId && ["best_performer", "new_description", "different_time", "seasonal_refresh"].includes(strategy)) return;
-    if (!republishBoardId && strategy === "other_board") return;
-    setRepublishLoading(true);
-    setRepublishResult(null);
-    try {
-      const res = await fetch("/api/republish", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          strategy,
-          previewId: republishPreviewId || undefined,
-          boardId: republishBoardId || undefined,
-        }),
-      });
-      const data = await res.json();
-      setRepublishResult(data);
-      if (data.success) {
-        await fetchPreviews();
-      }
-    } catch (err) {
-      setRepublishResult({
-        success: false,
-        message: err instanceof Error ? err.message : String(err),
-      });
-    }
-    setRepublishLoading(false);
-  }
-
-  // -------------------------------------------------------------------------
-  // Mount
-  // -------------------------------------------------------------------------
-
-  useEffect(() => {
-    fetchAuth();
-    fetchPosts();
-    fetchPreviews();
-    fetchSuggestion();
-    fetchGuardrails();
-  }, [fetchAuth, fetchPosts, fetchPreviews, fetchSuggestion, fetchGuardrails]);
-
-  // Fetch boards when form opens and connected
-  useEffect(() => {
-    if (formOpen && auth?.connected && !boardsLoaded) {
-      fetchBoards();
-    }
-  }, [formOpen, auth, boardsLoaded, fetchBoards]);
-
-  // Fetch previews and prompts based on tab
-  useEffect(() => {
-    if (activeTab === "calendrier") {
-      fetchPreviews();
-    }
-    if (activeTab === "prompts") {
-      fetchPrompts();
-    }
-    if (activeTab === "perdus") {
-      fetchPreviews();
-    }
-  }, [activeTab, fetchPreviews, fetchPrompts]);
-
-  // Fetch boards for batch mode on calendrier tab and republication on publications tab
-  useEffect(() => {
-    if ((activeTab === "calendrier" || activeTab === "publications") && auth?.connected && !boardsLoaded) {
-      fetchBoards();
-    }
-  }, [activeTab, auth, boardsLoaded, fetchBoards]);
-
-  // Fetch analytics for posts with lastPinId
-  useEffect(() => {
-    posts.forEach((p) => {
-      if (p.lastPinId && !analyticsCache[p.lastPinId]) {
-        fetchAnalytics(p.lastPinId);
-      }
-    });
-  }, [posts, analyticsCache, fetchAnalytics]);
-
-  // -------------------------------------------------------------------------
-  // KPI Computed
-  // -------------------------------------------------------------------------
-
-  const kpiData = useMemo(() => {
-    const now = new Date();
-    const startOfWeek = new Date(now);
-    const day = startOfWeek.getDay();
-    const diff = day === 0 ? 6 : day - 1;
-    startOfWeek.setDate(startOfWeek.getDate() - diff);
-    startOfWeek.setHours(0, 0, 0, 0);
-
-    const postsThisWeek = posts.filter((p) => {
-      if (!p.lastRunAt) return false;
-      return new Date(p.lastRunAt) >= startOfWeek;
-    }).length;
-
-    const totalWithRun = posts.filter((p) => p.lastRunStatus !== null).length;
-    const successCount = posts.filter(
-      (p) => p.lastRunStatus === "success",
-    ).length;
-    const successRate =
-      totalWithRun > 0 ? Math.round((successCount / totalWithRun) * 100) : 0;
-
-    // Next scheduled post: find earliest approved preview in the future
-    const futurePreviews = previews
-      .filter(
-        (p) =>
-          (p.status === "approved" || p.status === "pending") &&
-          new Date(p.scheduledFor).getTime() > Date.now(),
-      )
-      .sort(
-        (a, b) =>
-          new Date(a.scheduledFor).getTime() -
-          new Date(b.scheduledFor).getTime(),
-      );
-    const nextPost = futurePreviews[0] || null;
-
-    const pendingCount = previews.filter(
-      (p) => p.status === "pending",
-    ).length;
-
-    return { postsThisWeek, successRate, nextPost, pendingCount };
-  }, [posts, previews]);
-
-  // -------------------------------------------------------------------------
-  // "Post du jour" — today's pending preview
-  // -------------------------------------------------------------------------
-
-  const todayPreview = useMemo(() => {
-    const today = new Date();
-    return (
-      previews.find(
-        (p) =>
-          p.status === "pending" &&
-          isSameDay(new Date(p.scheduledFor), today),
-      ) || null
-    );
-  }, [previews]);
-
-  // -------------------------------------------------------------------------
-  // Rejected previews (Perdus tab)
-  // -------------------------------------------------------------------------
-
-  const rejectedPreviews = useMemo(
-    () => previews.filter((p) => p.status === "rejected"),
-    [previews],
-  );
-
-  // -------------------------------------------------------------------------
-  // Rapid mode previews (pending/approved in calendar range)
-  // -------------------------------------------------------------------------
-
-  const rapidPreviews = useMemo(
-    () => previews.filter((p) => p.status === "pending"),
-    [previews],
-  );
-
-  // -------------------------------------------------------------------------
-  // Handlers -- Posts
-  // -------------------------------------------------------------------------
-
-  function openCreateForm() {
-    setEditingId(null);
-    setForm({ ...EMPTY_FORM });
-    setFormError(null);
-    setFormOpen(true);
-  }
-
-  function openEditForm(post: ScheduledPost) {
-    setEditingId(post.id);
-    setForm({
-      name: post.name,
-      boardIds: post.boardIds || [post.boardId],
-      boardNames: post.boardNames || [post.boardName],
-      cronExpression: post.cronExpression,
-      theme: post.theme || "",
-      customInstructions: post.customInstructions || "",
-      link: post.link,
-      promptStyle: "PrismaFlux",
-    });
-    setFormError(null);
-    setFormOpen(true);
-  }
-
-  function closeForm() {
-    setFormOpen(false);
-    setEditingId(null);
-    setFormError(null);
-  }
-
-  function toggleBoardInForm(board: PinterestBoard) {
-    const idx = form.boardIds.indexOf(board.id);
-    if (idx >= 0) {
-      setForm({
-        ...form,
-        boardIds: form.boardIds.filter((_, i) => i !== idx),
-        boardNames: form.boardNames.filter((_, i) => i !== idx),
-      });
-    } else {
-      setForm({
-        ...form,
-        boardIds: [...form.boardIds, board.id],
-        boardNames: [...form.boardNames, board.name],
-      });
-    }
-  }
-
-  async function saveForm() {
-    if (!form.name.trim()) {
-      setFormError("Le nom est requis");
-      return;
-    }
-    if (form.boardIds.length === 0) {
-      setFormError("Selectionnez au moins un tableau");
-      return;
-    }
-
-    setFormSaving(true);
-    setFormError(null);
-
-    try {
-      const body = {
-        name: form.name.trim(),
-        boardId: form.boardIds[0],
-        boardName: form.boardNames[0],
-        boardIds: form.boardIds,
-        boardNames: form.boardNames,
-        cronExpression: form.cronExpression,
-        theme: form.theme || null,
-        customInstructions: form.customInstructions.trim() || null,
-        link: form.link.trim() || "https://auto-prismaflux.com",
-        promptStyle: form.promptStyle,
-      };
-
-      let res: Response;
-      if (editingId) {
-        res = await fetch(`/api/posts/${editingId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-      } else {
-        res = await fetch("/api/posts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-      }
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Erreur lors de la sauvegarde");
-      }
-
-      await fetchPosts();
-      closeForm();
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : String(err));
-    }
-    setFormSaving(false);
-  }
-
-  async function togglePost(post: ScheduledPost) {
-    setTogglingId(post.id);
-    try {
-      await fetch(`/api/posts/${post.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled: !post.enabled }),
-      });
-      await fetchPosts();
-    } catch {
-      /* silent */
-    }
-    setTogglingId(null);
-  }
-
-  async function deletePost(id: string) {
-    setDeletingId(id);
-    try {
-      await fetch(`/api/posts/${id}`, { method: "DELETE" });
-      await fetchPosts();
-      if (confirmDeleteId === id) setConfirmDeleteId(null);
-    } catch {
-      /* silent */
-    }
-    setDeletingId(null);
-  }
-
-  async function runPost(id: string) {
-    setRunningId(id);
-    setRunResult(null);
-    try {
-      const res = await fetch(`/api/posts/${id}/run`, { method: "POST" });
-      const data = await res.json();
-      setRunResult({ postId: id, result: data });
-      await fetchPosts();
-      if (data.success && data.imageBase64) {
-        const syntheticPreview: PreviewData = {
-          id: "run-result-" + id,
-          postId: id,
-          prompt: data.prompt || {
-            imagePrompt: "",
-            theme: "",
-            style: "",
-          },
-          content: data.content || {
-            title: "",
-            description: "",
-            altText: "",
-          },
-          linkedin: data.linkedin,
-          imageBase64: data.imageBase64,
-          imageContentType: "image/jpeg",
-          status: "published",
-          scheduledFor: new Date().toISOString(),
-          scheduledHour: new Date().getHours(),
-          scheduledMinute: new Date().getMinutes(),
-          createdAt: new Date().toISOString(),
-        };
-        setPreviewModalData(syntheticPreview);
-        setPreviewModalVariants([syntheticPreview]);
-        setPreviewVariantTab(0);
-      }
-    } catch (err) {
-      setRunResult({
-        postId: id,
-        result: {
-          success: false,
-          error: err instanceof Error ? err.message : String(err),
-          durationMs: 0,
-        },
-      });
-    }
-    setRunningId(null);
-  }
-
-  async function handleLogout() {
-    try {
-      await fetch("/api/auth/pinterest/logout", { method: "POST" });
-      setAuth({ connected: false });
-      setBoards([]);
-      setBoardsLoaded(false);
-    } catch {
-      /* silent */
-    }
-  }
-
-  async function runTest() {
-    setTestLoading(true);
-    setTestResult(null);
-    try {
-      const res = await fetch("/api/marketing/pinterest/test", {
-        method: "POST",
-      });
-      const data = await res.json();
-      setTestResult(data);
-    } catch (err) {
-      setTestResult({
-        success: false,
-        error: err instanceof Error ? err.message : String(err),
-        durationMs: 0,
-      });
-    }
-    setTestLoading(false);
-  }
-
-  // -------------------------------------------------------------------------
-  // Handlers -- Previews
-  // -------------------------------------------------------------------------
-
-  function openPreviewModal(preview: PreviewData) {
-    setPreviewModalData(preview);
-    const variants = previews.filter(
-      (p) =>
-        p.postId === preview.postId &&
-        p.scheduledFor === preview.scheduledFor &&
-        p.scheduledHour === preview.scheduledHour,
-    );
-    if (variants.length > 1) {
-      setPreviewModalVariants(variants);
-      const idx = variants.findIndex((v) => v.id === preview.id);
-      setPreviewVariantTab(idx >= 0 ? idx : 0);
-    } else {
-      setPreviewModalVariants([preview]);
-      setPreviewVariantTab(0);
-    }
-    setExportData(null);
-  }
-
-  function closePreviewModal() {
-    setPreviewModalData(null);
-    setPreviewModalVariants([]);
-    setPreviewVariantTab(0);
-    setExportData(null);
-  }
-
-  async function approvePreview(id: string) {
-    setPreviewActionLoading(true);
-    try {
-      await fetch(`/api/previews/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "approved" }),
-      });
-      await fetchPreviews();
-      setPreviewModalData((prev) =>
-        prev && prev.id === id ? { ...prev, status: "approved" } : prev,
-      );
-    } catch {
-      /* silent */
-    }
-    setPreviewActionLoading(false);
-  }
-
-  async function rejectPreview(id: string) {
-    setPreviewActionLoading(true);
-    try {
-      await fetch(`/api/previews/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "rejected" }),
-      });
-      await fetchPreviews();
-      setPreviewModalData((prev) =>
-        prev && prev.id === id ? { ...prev, status: "rejected" } : prev,
-      );
-    } catch {
-      /* silent */
-    }
-    setPreviewActionLoading(false);
-  }
-
-  async function publishPreview(id: string) {
-    setPreviewActionLoading(true);
-    try {
-      await fetch(`/api/previews/${id}/publish`, { method: "POST" });
-      await fetchPreviews();
-      setPreviewModalData((prev) =>
-        prev && prev.id === id ? { ...prev, status: "published" } : prev,
-      );
-    } catch {
-      /* silent */
-    }
-    setPreviewActionLoading(false);
-  }
-
-  async function reusePreview(id: string) {
-    try {
-      await fetch(`/api/previews/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "pending" }),
-      });
-      await fetchPreviews();
-    } catch {
-      /* silent */
-    }
-  }
-
-  // -------------------------------------------------------------------------
-  // Handlers -- Export
-  // -------------------------------------------------------------------------
-
-  async function handleExport(preview: PreviewData) {
-    setExportLoading(true);
-    setExportData(null);
-    try {
-      const res = await fetch("/api/export", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imagePrompt: preview.prompt.imagePrompt,
-          theme: preview.prompt.theme,
-          title: preview.content.title,
-          description: preview.content.description,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setExportData(data);
-      }
-    } catch {
-      /* silent */
-    }
-    setExportLoading(false);
-  }
-
-  function copyToClipboard(text: string, platform: string) {
-    navigator.clipboard.writeText(text).then(() => {
-      setExportCopied(platform);
-      setTimeout(() => setExportCopied(null), 2000);
-    });
-  }
-
-  function copyPlatformText(text: string, platform: string) {
-    navigator.clipboard.writeText(text).then(() => {
-      setPlatformCopied(platform);
-      setTimeout(() => setPlatformCopied(null), 2000);
-    });
-  }
-
-  // -------------------------------------------------------------------------
-  // Handlers -- Batch
-  // -------------------------------------------------------------------------
-
-  async function generateBatch() {
-    if (!batchBoardId) return;
-    setBatchLoading(true);
-    setBatchResult(null);
-    try {
-      const res = await fetch("/api/batch/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          daysAhead: 7,
-          postsPerDay: 2,
-          boardId: batchBoardId,
-          theme: null,
-          link: "https://auto-prismaflux.com",
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setBatchResult(
-          `${data.generated || data.count || "?"} previews generes avec succes.`,
-        );
-        await fetchPreviews();
-      } else {
-        const err = await res.json().catch(() => ({}));
-        setBatchResult(`Erreur: ${err.error || res.status}`);
-      }
-    } catch (err) {
-      setBatchResult(
-        `Erreur: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
-    setBatchLoading(false);
-  }
-
-  // -------------------------------------------------------------------------
-  // Handlers -- Prompts
-  // -------------------------------------------------------------------------
-
-  async function deletePrompt(id: string) {
-    setDeletingPromptId(id);
-    try {
-      await fetch(`/api/prompts/${id}`, { method: "DELETE" });
-      await fetchPrompts();
-    } catch {
-      /* silent */
-    }
-    setDeletingPromptId(null);
-  }
-
-  // -------------------------------------------------------------------------
-  // Calendar computed data
-  // -------------------------------------------------------------------------
-
-  const calendarDaysCount = isMobile ? 7 : 14;
-
-  const calendarDays = useMemo(() => {
-    const week0 = getWeekDays(calendarWeekOffset);
-    if (calendarDaysCount <= 7) return week0;
-    const week1 = getWeekDays(calendarWeekOffset + 1);
-    return [...week0, ...week1];
-  }, [calendarWeekOffset, calendarDaysCount]);
-
-  const previewsByDay = useMemo(() => {
-    const map: Record<string, PreviewData[]> = {};
-    calendarDays.forEach((d) => {
-      const key = d.toISOString().slice(0, 10);
-      map[key] = [];
-    });
-    previews.forEach((p) => {
-      const pDate = new Date(p.scheduledFor);
-      const key = pDate.toISOString().slice(0, 10);
-      if (map[key]) {
-        map[key].push(p);
-      }
-    });
-    Object.values(map).forEach((arr) =>
-      arr.sort((a, b) => {
-        if (a.scheduledHour !== b.scheduledHour)
-          return a.scheduledHour - b.scheduledHour;
-        return a.scheduledMinute - b.scheduledMinute;
-      }),
-    );
-    return map;
-  }, [previews, calendarDays]);
-
-  // -------------------------------------------------------------------------
-  // Dynamic Styles
-  // -------------------------------------------------------------------------
-
-  const padding = isMobile ? 16 : 32;
-
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    background: colors.bg,
-    color: colors.text,
-    border: `1px solid ${colors.border}`,
-    borderRadius: 8,
-    padding: "10px 12px",
-    fontSize: 14,
-    fontFamily: "inherit",
-    outline: "none",
-    boxSizing: "border-box",
-  };
-
-  // -------------------------------------------------------------------------
-  // Render
-  // -------------------------------------------------------------------------
-
-  return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: colors.bg,
-        color: colors.text,
-        fontFamily: "system-ui, -apple-system, sans-serif",
-      }}
-    >
-      <style>{`
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-      `}</style>
-
-      {/* Header */}
-      <header
-        style={{
-          borderBottom: `1px solid ${colors.border}`,
-          padding: isMobile ? "14px 16px" : "20px 32px",
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-        }}
-      >
-        <div
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            background: "linear-gradient(135deg, #e63232, #ff4444)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 18,
-            fontWeight: 700,
-            color: "#0a0a0f",
-            flexShrink: 0,
-          }}
-        >
-          P
+    <>
+      {/* ═══════════════════════════════════════════════════════════════════
+          HERO — Immersive luxury entry
+          ═══════════════════════════════════════════════════════════════════ */}
+      <section className="relative overflow-hidden min-h-[92vh] flex items-center">
+        {/* Layered backgrounds */}
+        <div className="absolute inset-0 bg-gradient-to-b from-cream-light via-ivory to-bg" />
+        <div className="absolute inset-0 bg-ambient" />
+        <div className="absolute inset-0 bg-silk opacity-40" />
+
+        {/* Decorative blobs */}
+        <div className="absolute top-16 right-[5%] w-[500px] h-[500px] bg-gradient-to-br from-gold/8 to-peach/8 rounded-full blur-[80px] animate-breathe" />
+        <div className="absolute bottom-10 left-[5%] w-[400px] h-[400px] bg-gradient-to-tr from-rose/6 to-gold/4 rounded-full blur-[60px]" />
+        <div className="absolute top-1/3 left-1/2 w-[300px] h-[300px] bg-peach/5 animate-morph blur-[40px]" />
+
+        {/* Ornamental circles */}
+        <div className="absolute top-1/2 right-[8%] -translate-y-1/2 w-[420px] h-[420px] border border-gold/[0.06] rounded-full hidden xl:block animate-spin-slow" />
+        <div className="absolute top-1/2 right-[8%] -translate-y-1/2 w-[350px] h-[350px] border border-rose/[0.05] rounded-full hidden xl:block" style={{ animationDirection: "reverse", animation: "spinSlow 55s linear infinite reverse" }} />
+        <div className="absolute top-1/2 right-[8%] -translate-y-1/2 w-[280px] h-[280px] border border-gold/[0.04] rounded-full hidden xl:block animate-spin-slow" style={{ animationDuration: "70s" }} />
+
+        {/* Decorative sparkles */}
+        <div className="absolute top-[20%] right-[15%] hidden lg:block">
+          <Sparkles size={14} className="text-gold/20 animate-twinkle" />
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h1
-            style={{
-              fontSize: isMobile ? 16 : 18,
-              fontWeight: 600,
-              margin: 0,
-              color: colors.text,
-            }}
-          >
-            PrismaFlux — Agent Pinterest
-          </h1>
-          <p style={{ fontSize: 13, color: colors.muted, margin: 0 }}>
-            Publication automatique multi-plateformes
-          </p>
+        <div className="absolute top-[60%] right-[25%] hidden lg:block">
+          <Star size={10} className="text-rose/20 animate-twinkle" style={{ animationDelay: "1.5s" }} />
+        </div>
+        <div className="absolute top-[35%] right-[30%] hidden lg:block">
+          <Gem size={12} className="text-gold/15 animate-twinkle" style={{ animationDelay: "0.8s" }} />
         </div>
 
-        {/* Auth indicator in header */}
-        {!authLoading && auth?.connected && (
-          <div style={{ position: "relative", flexShrink: 0 }}>
-            <button
-              onClick={() => setAuthDropdownOpen(!authDropdownOpen)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                background: colors.card,
-                border: `1px solid ${colors.border}`,
-                borderRadius: 20,
-                padding: "6px 12px",
-                fontSize: 12,
-                cursor: "pointer",
-                color: colors.text,
-                fontFamily: "inherit",
-              }}
-            >
-              <span
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: auth.needsReauth ? "#ff4444" : "#22c55e",
-                  display: "inline-block",
-                  flexShrink: 0,
-                  animation: auth.needsReauth ? "none" : "pulse 2s infinite",
-                }}
-              />
-              <span style={{ fontWeight: 600, maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {auth.username || "Connecte"}
-              </span>
-              <span style={{ color: auth.needsReauth ? "#ff4444" : colors.muted, fontSize: 11 }}>
-                {auth.needsReauth ? "Reauth" : `Expire ${auth.daysUntilExpiry}j`}
-              </span>
-            </button>
-            {authDropdownOpen && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "calc(100% + 4px)",
-                  right: 0,
-                  background: colors.card,
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: 10,
-                  padding: 8,
-                  zIndex: 100,
-                  minWidth: 160,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 4,
-                  boxShadow: dark ? "0 4px 16px rgba(0,0,0,0.5)" : "0 4px 16px rgba(0,0,0,0.15)",
-                }}
-              >
-                <a
-                  href="/api/auth/pinterest"
-                  onClick={() => setAuthDropdownOpen(false)}
-                  style={{
-                    display: "block",
-                    background: `${colors.accent}22`,
-                    color: colors.accent,
-                    border: `1px solid ${colors.accent}66`,
-                    borderRadius: 6,
-                    padding: "8px 12px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    textDecoration: "none",
-                    textAlign: "center",
-                  }}
-                >
-                  Re-connecter
-                </a>
-                <button
-                  onClick={() => { handleLogout(); setAuthDropdownOpen(false); }}
-                  style={{
-                    background: "transparent",
-                    color: colors.muted,
-                    border: `1px solid ${colors.border}`,
-                    borderRadius: 6,
-                    padding: "8px 12px",
-                    fontSize: 12,
-                    fontWeight: 500,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  Deconnecter
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Theme toggle */}
-        <button
-          onClick={() => setDark(!dark)}
-          style={{
-            background: colors.card,
-            border: `1px solid ${colors.border}`,
-            borderRadius: 8,
-            padding: "8px 12px",
-            fontSize: 14,
-            cursor: "pointer",
-            color: colors.text,
-            fontFamily: "inherit",
-            flexShrink: 0,
-          }}
-          title={dark ? "Mode clair" : "Mode sombre"}
-        >
-          {dark ? "\u2600" : "\u263D"}
-        </button>
-      </header>
-
-      {/* Tab Navigation */}
-      <nav
-        style={{
-          borderBottom: `1px solid ${colors.border}`,
-          padding: isMobile ? "0 8px" : "0 32px",
-          display: "flex",
-          gap: 0,
-          overflowX: isMobile ? "auto" : "visible",
-          WebkitOverflowScrolling: "touch",
-        }}
-      >
-        {TAB_LIST.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            style={{
-              background: "transparent",
-              border: "none",
-              borderBottom:
-                activeTab === tab.key
-                  ? `2px solid ${colors.accent}`
-                  : "2px solid transparent",
-              color: activeTab === tab.key ? colors.accent : colors.muted,
-              padding: isMobile ? "12px 14px" : "14px 24px",
-              fontSize: isMobile ? 13 : 14,
-              fontWeight: activeTab === tab.key ? 600 : 500,
-              cursor: "pointer",
-              transition: "all 0.15s",
-              fontFamily: "inherit",
-              whiteSpace: "nowrap",
-              flexShrink: 0,
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
-
-      <main
-        style={{
-          maxWidth: 1100,
-          margin: "0 auto",
-          padding: `${padding}px ${isMobile ? 12 : 24}px`,
-        }}
-      >
-        {/* Auth banner moved inside Publications tab only */}
-
-        {/* ================================================================= */}
-        {/* KPI Dashboard (always visible above tabs)                         */}
-        {/* ================================================================= */}
-        <section style={{ marginBottom: isMobile ? 16 : 24 }}>
-          <div
-            onClick={() => setKpiExpanded(!kpiExpanded)}
-            style={{
-              display: "grid",
-              gridTemplateColumns: isMobile
-                ? "1fr 1fr"
-                : "repeat(4, 1fr)",
-              gap: isMobile ? 8 : 16,
-              cursor: "pointer",
-            }}
-          >
-            <KpiCard
-              label="Posts cette semaine"
-              value={String(kpiData.postsThisWeek)}
-              color="#3b82f6"
-              colors={colors}
-            />
-            <KpiCard
-              label="Taux de succes"
-              value={`${kpiData.successRate}%`}
-              color="#22c55e"
-              colors={colors}
-            />
-            <KpiCard
-              label="Prochain post"
-              value={
-                kpiData.nextPost
-                  ? timeUntil(kpiData.nextPost.scheduledFor)
-                  : "—"
-              }
-              color={colors.accent}
-              colors={colors}
-            />
-            <KpiCard
-              label="Posts en attente"
-              value={String(kpiData.pendingCount)}
-              color="#ff4444"
-              colors={colors}
-            />
-          </div>
-          {kpiExpanded && (
-            <div
-              style={{
-                background: colors.card,
-                borderRadius: 12,
-                border: `1px solid ${colors.border}`,
-                padding: isMobile ? "12px 14px" : "16px 20px",
-                marginTop: 8,
-                fontSize: 13,
-                color: colors.muted,
-              }}
-            >
-              <p style={{ margin: "0 0 4px" }}>
-                <strong style={{ color: colors.text }}>
-                  {posts.length}
-                </strong>{" "}
-                publications configurees — {posts.filter((p) => p.enabled).length}{" "}
-                actives
-              </p>
-              <p style={{ margin: "0 0 4px" }}>
-                <strong style={{ color: colors.text }}>
-                  {previews.length}
-                </strong>{" "}
-                previews totaux —{" "}
-                {previews.filter((p) => p.status === "approved").length}{" "}
-                approuves,{" "}
-                {previews.filter((p) => p.status === "published").length}{" "}
-                publies
-              </p>
-              <p style={{ margin: 0 }}>
-                Cliquez pour replier
-              </p>
-            </div>
-          )}
-        </section>
-
-        {/* ================================================================= */}
-        {/* Guardrails Status Bar                                              */}
-        {/* ================================================================= */}
-        {guards && (
-          <section style={{ marginBottom: isMobile ? 16 : 24 }}>
-            {/* Kill switch active banner */}
-            {guards.killSwitch && (
-              <div
-                style={{
-                  background: "#7f1d1d",
-                  borderRadius: 12,
-                  border: "2px solid #ef4444",
-                  padding: isMobile ? "12px 14px" : "14px 20px",
-                  marginBottom: 10,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  flexWrap: "wrap",
-                  animation: "pulse 1.5s infinite",
-                }}
-              >
-                <span style={{ fontSize: 15, fontWeight: 700, color: "#fca5a5" }}>
-                  PUBLICATIONS DESACTIVEES
-                </span>
-                <button
-                  onClick={killSwitchToggle}
-                  style={{
-                    background: "#14532d",
-                    color: "#86efac",
-                    border: "1px solid #166534",
-                    borderRadius: 8,
-                    padding: "8px 20px",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  Reactiver
-                </button>
-              </div>
-            )}
-
-            {/* Not allowed warning */}
-            {!guards.allowed && !guards.killSwitch && guards.reason && (
-              <div
-                style={{
-                  background: dark ? "#1c1812" : "#fffbeb",
-                  borderRadius: 12,
-                  border: "1px solid #f59e0b66",
-                  padding: isMobile ? "10px 14px" : "12px 20px",
-                  marginBottom: 10,
-                  fontSize: 13,
-                  color: "#fbbf24",
-                  fontWeight: 600,
-                }}
-              >
-                {guards.reason}
-              </div>
-            )}
-
-            {/* Usage bar */}
-            <div
-              style={{
-                background: colors.card,
-                borderRadius: 12,
-                border: `1px solid ${colors.border}`,
-                padding: isMobile ? "10px 14px" : "12px 20px",
-                display: "flex",
-                alignItems: "center",
-                gap: isMobile ? 10 : 20,
-                flexWrap: "wrap",
-              }}
-            >
-              {/* Daily usage */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ flex: "0 0 auto" }}>
-                  <span style={{ fontSize: 12, color: colors.muted, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: 0.5 }}>
-                    Publications
-                  </span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <div
-                    style={{
-                      width: isMobile ? 60 : 80,
-                      height: 6,
-                      borderRadius: 3,
-                      background: colors.border,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: `${guards.dailyMax > 0 ? Math.min(100, (guards.dailyCount / guards.dailyMax) * 100) : 0}%`,
-                        height: "100%",
-                        borderRadius: 3,
-                        background: guards.dailyCount >= guards.dailyMax ? "#ef4444" : "#22c55e",
-                        transition: "width 0.3s",
-                      }}
-                    />
-                  </div>
-                  <span style={{ fontSize: 12, color: colors.text, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
-                    {guards.dailyCount}/{guards.dailyMax} aujourd{"'"}hui
-                  </span>
-                </div>
-              </div>
-
-              {/* Monthly usage */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ flex: "0 0 auto" }}>
-                  <span style={{ fontSize: 12, color: colors.muted, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: 0.5 }}>
-                    Generations
-                  </span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <div
-                    style={{
-                      width: isMobile ? 60 : 80,
-                      height: 6,
-                      borderRadius: 3,
-                      background: colors.border,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: `${guards.monthlyMax > 0 ? Math.min(100, (guards.monthlyCount / guards.monthlyMax) * 100) : 0}%`,
-                        height: "100%",
-                        borderRadius: 3,
-                        background: guards.monthlyCount >= guards.monthlyMax ? "#ef4444" : "#3b82f6",
-                        transition: "width 0.3s",
-                      }}
-                    />
-                  </div>
-                  <span style={{ fontSize: 12, color: colors.text, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
-                    {guards.monthlyCount}/{guards.monthlyMax} ce mois (~${guards.estimatedCost.toFixed(2)})
-                  </span>
-                </div>
-              </div>
-
-              {/* Cooldown */}
-              {guards.cooldownWait > 0 && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 600 }}>
-                    Cooldown: {guards.cooldownWait} min restantes
-                  </span>
-                </div>
-              )}
-
-              {/* Kill switch button */}
-              <div style={{ marginLeft: "auto" }}>
-                <button
-                  onClick={killSwitchToggle}
-                  style={{
-                    background: guards.killSwitch ? "#14532d" : "#7f1d1d",
-                    color: guards.killSwitch ? "#86efac" : "#fca5a5",
-                    border: guards.killSwitch ? "2px solid #166534" : "2px solid #ef4444",
-                    borderRadius: 8,
-                    padding: isMobile ? "8px 14px" : "8px 20px",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                    textTransform: "uppercase" as const,
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  {guards.killSwitch ? "Reactiver" : "STOP TOUT"}
-                </button>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* ================================================================= */}
-        {/* SEO Tips (collapsible)                                             */}
-        {/* ================================================================= */}
-        <section style={{ marginBottom: isMobile ? 16 : 24 }}>
-          <button
-            onClick={() => setSeoTipsOpen(!seoTipsOpen)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              background: "transparent",
-              border: "none",
-              color: colors.accent,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-              padding: 0,
-              fontFamily: "inherit",
-              textTransform: "uppercase",
-              letterSpacing: 0.5,
-              marginBottom: seoTipsOpen ? 8 : 0,
-            }}
-          >
-            Conseils SEO {seoTipsOpen ? "\u25B2" : "\u25BC"}
-          </button>
-          {seoTipsOpen && (
-            <div
-              style={{
-                background: dark ? "#1a1800" : "#fffde6",
-                borderRadius: 12,
-                border: `2px solid ${colors.accent}66`,
-                padding: isMobile ? "12px 14px" : "14px 20px",
-                animation: "fadeIn 0.3s ease",
-              }}
-            >
-              <ul style={{ margin: 0, padding: "0 0 0 18px", listStyle: "disc" }}>
-                {todaySeoTips.map((tip, i) => (
-                  <li key={i} style={{ fontSize: 13, color: colors.text, lineHeight: 1.8 }}>
-                    {tip}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </section>
-
-        {/* ================================================================= */}
-        {/* IA Suggestion Banner                                               */}
-        {/* ================================================================= */}
-        {suggestion && (
-          <section style={{ marginBottom: isMobile ? 16 : 24 }}>
-            <div
-              style={{
-                background: dark ? "#1a1800" : "#fffde6",
-                borderRadius: 12,
-                border: `1px solid ${colors.accent}66`,
-                padding: isMobile ? "12px 14px" : "14px 20px",
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 12,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 20,
-                  lineHeight: 1,
-                  flexShrink: 0,
-                  marginTop: 2,
-                }}
-              >
-                {"\u2728"}
-              </span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: colors.accent,
-                    margin: 0,
-                    marginBottom: 4,
-                    textTransform: "uppercase",
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  Recommandation IA
-                </p>
-                <p
-                  style={{
-                    fontSize: 14,
-                    margin: 0,
-                    color: colors.text,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {suggestion}
-                </p>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* ================================================================= */}
-        {/* TAB: Publications                                                  */}
-        {/* ================================================================= */}
-        {activeTab === "publications" && (
-          <section style={{ marginBottom: padding }}>
-            {/* Auth banner — only in Publications tab */}
-            {!authLoading && !auth?.connected && (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  background: dark ? "#1c1012" : "#fef2f2",
-                  borderRadius: 10,
-                  border: "1px solid #ef444444",
-                  padding: "10px 16px",
-                  marginBottom: isMobile ? 16 : 24,
-                }}
-              >
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    background: "#ef4444",
-                    display: "inline-block",
-                    flexShrink: 0,
-                  }}
-                />
-                <span style={{ fontSize: 13, color: colors.muted, flex: 1 }}>
-                  Non connecte
-                </span>
-                <a
-                  href="/api/auth/pinterest"
-                  style={{
-                    background: `linear-gradient(135deg, ${colors.accent}, #ff4444)`,
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 8,
-                    padding: "7px 16px",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    textDecoration: "none",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Connecter Pinterest
-                </a>
-              </div>
-            )}
-            {/* Post du jour */}
-            <div
-              style={{
-                background: dark ? "#111113" : "#fefce8",
-                borderRadius: 12,
-                border: todayPreview ? `2px solid ${colors.accent}66` : `1px solid ${colors.accent}44`,
-                padding: isMobile ? "14px" : "16px 20px",
-                marginBottom: isMobile ? 16 : 20,
-                animation: todayPreview ? "pulse 1.5s infinite" : "none",
-              }}
-            >
-              <SectionTitle colors={colors} style={{ marginBottom: 10 }}>
-                Post du jour
-              </SectionTitle>
-              {todayPreview ? (
-                <>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: isMobile ? "flex-start" : "center",
-                    gap: 14,
-                    flexDirection: isMobile ? "column" : "row",
-                  }}
-                >
-                  {/* Thumbnail */}
-                  {todayPreview.imageBase64 ? (
-                    <img
-                      src={`data:${todayPreview.imageContentType || "image/jpeg"};base64,${todayPreview.imageBase64}`}
-                      alt="Preview"
-                      style={{
-                        width: isMobile ? "100%" : 80,
-                        height: isMobile ? 140 : 120,
-                        objectFit: "cover",
-                        borderRadius: 8,
-                        border: `1px solid ${colors.border}`,
-                        flexShrink: 0,
-                      }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: isMobile ? "100%" : 80,
-                        height: isMobile ? 140 : 120,
-                        borderRadius: 8,
-                        background:
-                          "linear-gradient(135deg, #e6323233, #3b82f633)",
-                        flexShrink: 0,
-                      }}
-                    />
-                  )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p
-                      style={{
-                        fontSize: 15,
-                        fontWeight: 600,
-                        margin: "0 0 6px",
-                        color: colors.text,
-                      }}
-                    >
-                      {todayPreview.content.title || "Sans titre"}
-                    </p>
-                    <p
-                      style={{
-                        fontSize: 13,
-                        color: colors.muted,
-                        margin: "0 0 10px",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {padTime(todayPreview.scheduledHour)}:
-                      {padTime(todayPreview.scheduledMinute)} —{" "}
-                      {todayPreview.content.description?.slice(0, 80) || ""}
-                    </p>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <button
-                        onClick={() => approvePreview(todayPreview.id)}
-                        style={{
-                          background: "#14532d",
-                          color: "#86efac",
-                          border: "1px solid #166534",
-                          borderRadius: 8,
-                          padding: "8px 18px",
-                          fontSize: 13,
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                        }}
-                      >
-                        Approuver
-                      </button>
-                      <button
-                        onClick={() => rejectPreview(todayPreview.id)}
-                        style={{
-                          background: "#7f1d1d",
-                          color: "#fca5a5",
-                          border: "1px solid #991b1b",
-                          borderRadius: 8,
-                          padding: "8px 18px",
-                          fontSize: 13,
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                        }}
-                      >
-                        Rejeter
-                      </button>
-                      <button
-                        onClick={() => rejectPreview(todayPreview.id)}
-                        style={{
-                          background: "transparent",
-                          color: colors.muted,
-                          border: `1px solid ${colors.border}`,
-                          borderRadius: 8,
-                          padding: "8px 18px",
-                          fontSize: 13,
-                          fontWeight: 500,
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                        }}
-                      >
-                        Decliner
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                {/* Platform tabs */}
-                <div style={{ marginTop: 14 }}>
-                  <div style={{ display: "flex", gap: 0, borderBottom: `1px solid ${colors.border}`, marginBottom: 10 }}>
-                    {(["pinterest", "linkedin", "instagram", "facebook"] as const).map((p) => (
-                      <button
-                        key={p}
-                        onClick={() => setPlatformTab(p)}
-                        style={{
-                          background: "transparent",
-                          border: "none",
-                          borderBottom: platformTab === p ? `2px solid ${colors.accent}` : "2px solid transparent",
-                          color: platformTab === p ? colors.accent : colors.muted,
-                          padding: "8px 14px",
-                          fontSize: 12,
-                          fontWeight: platformTab === p ? 600 : 500,
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {p === "pinterest" ? "Pinterest" : p === "linkedin" ? "LinkedIn" : p === "instagram" ? "Instagram" : "Facebook"}
-                      </button>
-                    ))}
-                  </div>
-                  <div
-                    style={{
-                      background: colors.bg,
-                      borderRadius: 8,
-                      border: `1px solid ${colors.border}`,
-                      padding: 12,
-                      animation: "fadeIn 0.3s ease",
-                    }}
-                  >
-                    <p
-                      style={{
-                        fontSize: 13,
-                        margin: 0,
-                        color: colors.text,
-                        lineHeight: 1.5,
-                        whiteSpace: "pre-wrap",
-                      }}
-                    >
-                      {platformTab === "pinterest"
-                        ? todayPreview.content.description || "Non genere"
-                        : platformTab === "linkedin"
-                          ? todayPreview.social?.linkedin || "Non genere"
-                          : platformTab === "instagram"
-                            ? todayPreview.social?.instagram || "Non genere"
-                            : todayPreview.social?.facebook || "Non genere"}
-                    </p>
-                    <button
-                      onClick={() =>
-                        copyPlatformText(
-                          platformTab === "pinterest"
-                            ? todayPreview.content.description || ""
-                            : platformTab === "linkedin"
-                              ? todayPreview.social?.linkedin || ""
-                              : platformTab === "instagram"
-                                ? todayPreview.social?.instagram || ""
-                                : todayPreview.social?.facebook || "",
-                          `today-${platformTab}`,
-                        )
-                      }
-                      style={{
-                        marginTop: 8,
-                        background: "transparent",
-                        border: `1px solid ${colors.border}`,
-                        borderRadius: 6,
-                        padding: "5px 12px",
-                        fontSize: 11,
-                        cursor: "pointer",
-                        color: platformCopied === `today-${platformTab}` ? "#22c55e" : colors.muted,
-                        fontFamily: "inherit",
-                      }}
-                    >
-                      {platformCopied === `today-${platformTab}` ? "Copie !" : "Copier"}
-                    </button>
-                  </div>
-                </div>
-                </>
-              ) : (
-                <div
-                  style={{
-                    textAlign: "center",
-                    padding: "12px 0",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: 14,
-                      color: colors.muted,
-                      margin: "0 0 10px",
-                    }}
-                  >
-                    Aucun post programme aujourd{"'"}hui
-                  </p>
-                  <button
-                    onClick={openCreateForm}
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #e63232, #ff4444)",
-                      color: "#0a0a0f",
-                      border: "none",
-                      borderRadius: 8,
-                      padding: "8px 20px",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    Generer un post
-                  </button>
-                </div>
-              )}
+        <div className="relative max-w-7xl mx-auto px-6 lg:px-10 py-24 md:py-32 w-full">
+          <div className="max-w-3xl">
+            {/* Label */}
+            <div className="flex items-center gap-3.5 mb-8">
+              <span className="w-10 h-px bg-gradient-to-r from-gold to-rose" />
+              <span className="section-label">Institut de beauté &mdash; Seraing, Belgique</span>
             </div>
 
-            {/* Header + new post button */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 12,
-              }}
-            >
-              <SectionTitle colors={colors} style={{ marginBottom: 0 }}>
-                Publications planifiees
-              </SectionTitle>
-              <button
-                onClick={openCreateForm}
-                style={{
-                  background:
-                    "linear-gradient(135deg, #e63232, #ff4444)",
-                  color: "#0a0a0f",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "8px 18px",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-              >
-                + Nouvelle publication
-              </button>
-            </div>
-
-            {/* Form (create / edit) */}
-            {formOpen && (
-              <div
-                style={{
-                  background: colors.card,
-                  borderRadius: 12,
-                  border: `1px solid ${colors.accent}33`,
-                  padding: isMobile ? 14 : 20,
-                  marginBottom: 16,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 16,
-                  }}
-                >
-                  <h3
-                    style={{ fontSize: 15, fontWeight: 600, margin: 0 }}
-                  >
-                    {editingId
-                      ? "Modifier la publication"
-                      : "Nouvelle publication"}
-                  </h3>
-                  <button
-                    onClick={closeForm}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      color: colors.muted,
-                      fontSize: 18,
-                      cursor: "pointer",
-                      padding: "4px 8px",
-                      lineHeight: 1,
-                    }}
-                  >
-                    {"\u2715"}
-                  </button>
-                </div>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-                    gap: 12,
-                    marginBottom: 12,
-                  }}
-                >
-                  {/* Name */}
-                  <div>
-                    <FormLabel colors={colors}>Nom</FormLabel>
-                    <input
-                      type="text"
-                      value={form.name}
-                      onChange={(e) =>
-                        setForm({ ...form, name: e.target.value })
-                      }
-                      placeholder="Ex: Post quotidien PrismaFlux"
-                      style={inputStyle}
-                    />
-                  </div>
-
-                  {/* Schedule */}
-                  <div>
-                    <FormLabel colors={colors}>Frequence</FormLabel>
-                    <select
-                      value={form.cronExpression}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          cronExpression: e.target.value,
-                        })
-                      }
-                      style={inputStyle}
-                    >
-                      {SCHEDULE_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Theme */}
-                  <div>
-                    <FormLabel colors={colors}>Theme visuel</FormLabel>
-                    <select
-                      value={form.theme}
-                      onChange={(e) =>
-                        setForm({ ...form, theme: e.target.value })
-                      }
-                      style={inputStyle}
-                    >
-                      <option value="">Aleatoire (rotation)</option>
-                      {THEMES.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Prompt Style */}
-                  <div>
-                    <FormLabel colors={colors}>Style de ton</FormLabel>
-                    <select
-                      value={form.promptStyle}
-                      onChange={(e) =>
-                        setForm({ ...form, promptStyle: e.target.value })
-                      }
-                      style={inputStyle}
-                    >
-                      {PROMPT_STYLES.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Link */}
-                  <div style={{ gridColumn: isMobile ? undefined : "1 / -1" }}>
-                    <FormLabel colors={colors}>Lien de destination</FormLabel>
-                    <input
-                      type="url"
-                      value={form.link}
-                      onChange={(e) =>
-                        setForm({ ...form, link: e.target.value })
-                      }
-                      placeholder="https://auto-prismaflux.com"
-                      style={inputStyle}
-                    />
-                  </div>
-                </div>
-
-                {/* Multi-board selection */}
-                <div style={{ marginBottom: 12 }}>
-                  <FormLabel colors={colors}>
-                    Tableaux Pinterest (multi-selection)
-                  </FormLabel>
-                  {boards.length === 0 ? (
-                    <p
-                      style={{
-                        fontSize: 13,
-                        color: colors.muted,
-                        margin: 0,
-                      }}
-                    >
-                      Chargement des tableaux...
-                    </p>
-                  ) : (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: 8,
-                        padding: 12,
-                        background: colors.bg,
-                        borderRadius: 8,
-                        border: `1px solid ${colors.border}`,
-                        maxHeight: 160,
-                        overflowY: "auto",
-                      }}
-                    >
-                      {boards.map((b) => {
-                        const checked = form.boardIds.includes(b.id);
-                        return (
-                          <label
-                            key={b.id}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 6,
-                              padding: "6px 12px",
-                              borderRadius: 6,
-                              background: checked
-                                ? `${colors.accent}22`
-                                : colors.card,
-                              border: `1px solid ${checked ? `${colors.accent}66` : colors.border}`,
-                              cursor: "pointer",
-                              fontSize: 13,
-                              color: checked ? colors.accent : colors.muted,
-                              transition: "all 0.15s",
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => toggleBoardInForm(b)}
-                              style={{
-                                accentColor: colors.accent,
-                                width: 14,
-                                height: 14,
-                              }}
-                            />
-                            {b.name}{" "}
-                            <span
-                              style={{
-                                color: colors.muted,
-                                fontSize: 11,
-                              }}
-                            >
-                              ({b.pinCount})
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* Custom Instructions */}
-                <div style={{ marginBottom: 16 }}>
-                  <FormLabel colors={colors}>
-                    Instructions personnalisees (optionnel)
-                  </FormLabel>
-                  <textarea
-                    value={form.customInstructions}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        customInstructions: e.target.value,
-                      })
-                    }
-                    placeholder="Ex: Mettre l'accent sur la vitesse de rotation du stock..."
-                    rows={3}
-                    style={{
-                      ...inputStyle,
-                      resize: "vertical" as const,
-                      minHeight: 70,
-                    }}
-                  />
-                </div>
-
-                {/* Error */}
-                {formError && (
-                  <div
-                    style={{
-                      background: "#1c1012",
-                      border: "1px solid #ef444433",
-                      borderRadius: 8,
-                      padding: "8px 12px",
-                      color: "#fca5a5",
-                      fontSize: 13,
-                      marginBottom: 12,
-                    }}
-                  >
-                    {formError}
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <button
-                    onClick={saveForm}
-                    disabled={formSaving}
-                    style={{
-                      background: formSaving
-                        ? colors.border
-                        : "linear-gradient(135deg, #e63232, #ff4444)",
-                      color: formSaving ? colors.muted : "#0a0a0f",
-                      border: "none",
-                      borderRadius: 8,
-                      padding: "10px 24px",
-                      fontSize: 14,
-                      fontWeight: 600,
-                      cursor: formSaving ? "not-allowed" : "pointer",
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    {formSaving
-                      ? "Sauvegarde..."
-                      : editingId
-                        ? "Mettre a jour"
-                        : "Creer"}
-                  </button>
-                  <button
-                    onClick={closeForm}
-                    style={{
-                      background: "transparent",
-                      color: colors.muted,
-                      border: `1px solid ${colors.border}`,
-                      borderRadius: 8,
-                      padding: "10px 20px",
-                      fontSize: 14,
-                      fontWeight: 500,
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    Annuler
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Posts List */}
-            {postsLoading ? (
-              <div
-                style={{
-                  background: colors.card,
-                  borderRadius: 12,
-                  border: `1px solid ${colors.border}`,
-                  padding: "32px 20px",
-                  textAlign: "center",
-                  color: colors.muted,
-                  fontSize: 14,
-                }}
-              >
-                Chargement des publications...
-              </div>
-            ) : posts.length === 0 && previews.length === 0 ? (
-              /* Onboarding empty state */
-              <div
-                style={{
-                  background: dark
-                    ? "linear-gradient(135deg, #18181b, #1a1a2e)"
-                    : "linear-gradient(135deg, #fefefe, #f0f0ff)",
-                  borderRadius: 16,
-                  border: `1px solid ${colors.accent}33`,
-                  padding: isMobile ? "28px 20px" : "40px 32px",
-                  textAlign: "center",
-                }}
-              >
-                <div
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 16,
-                    background: "linear-gradient(135deg, #e63232, #ff4444)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 26,
-                    fontWeight: 700,
-                    color: "#0a0a0f",
-                    margin: "0 auto 16px",
-                  }}
-                >
-                  P
-                </div>
-                <h3
-                  style={{
-                    fontSize: isMobile ? 18 : 22,
-                    fontWeight: 700,
-                    color: colors.text,
-                    margin: "0 0 8px",
-                  }}
-                >
-                  Bienvenue sur PrismaFlux Agent Pinterest
-                </h3>
-                <p
-                  style={{
-                    fontSize: 14,
-                    color: colors.muted,
-                    margin: "0 0 24px",
-                    lineHeight: 1.6,
-                    maxWidth: 480,
-                    marginLeft: "auto",
-                    marginRight: "auto",
-                  }}
-                >
-                  Commencez par connecter votre compte Pinterest, puis generez votre
-                  premiere semaine de contenu.
-                </p>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: isMobile ? 12 : 24,
-                    flexWrap: "wrap",
-                    marginBottom: 24,
-                  }}
-                >
-                  {/* Step 1 */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "50%",
-                        background: auth?.connected ? "#14532d" : `${colors.accent}22`,
-                        border: auth?.connected ? "2px solid #22c55e" : `2px solid ${colors.accent}`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: auth?.connected ? "#86efac" : colors.accent,
-                      }}
-                    >
-                      {auth?.connected ? "\u2713" : "1"}
-                    </div>
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: auth?.connected ? "#22c55e" : colors.text,
-                      }}
-                    >
-                      Connecter Pinterest
-                    </span>
-                  </div>
-
-                  {/* Arrow */}
-                  <span style={{ fontSize: 14, color: colors.muted, alignSelf: "center" }}>{"\u2192"}</span>
-
-                  {/* Step 2 */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "50%",
-                        background: auth?.connected && !boardsLoaded ? `${colors.accent}22` : colors.bg,
-                        border: `2px solid ${auth?.connected ? colors.accent : colors.border}`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: auth?.connected ? colors.accent : colors.muted,
-                      }}
-                    >
-                      2
-                    </div>
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: auth?.connected ? colors.text : colors.muted,
-                      }}
-                    >
-                      Generer un batch
-                    </span>
-                  </div>
-
-                  {/* Arrow */}
-                  <span style={{ fontSize: 14, color: colors.muted, alignSelf: "center" }}>{"\u2192"}</span>
-
-                  {/* Step 3 */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "50%",
-                        background: colors.bg,
-                        border: `2px solid ${colors.border}`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: colors.muted,
-                      }}
-                    >
-                      3
-                    </div>
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: colors.muted,
-                      }}
-                    >
-                      Approuver & Publier
-                    </span>
-                  </div>
-                </div>
-
-                {/* CTA */}
-                {!auth?.connected ? (
-                  <a
-                    href="/api/auth/pinterest"
-                    style={{
-                      display: "inline-block",
-                      background: "linear-gradient(135deg, #e63232, #ff4444)",
-                      color: "#0a0a0f",
-                      border: "none",
-                      borderRadius: 10,
-                      padding: "12px 32px",
-                      fontSize: 15,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      textDecoration: "none",
-                    }}
-                  >
-                    Commencer
-                  </a>
-                ) : (
-                  <button
-                    onClick={() => setActiveTab("calendrier")}
-                    style={{
-                      background: "linear-gradient(135deg, #e63232, #ff4444)",
-                      color: "#0a0a0f",
-                      border: "none",
-                      borderRadius: 10,
-                      padding: "12px 32px",
-                      fontSize: 15,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    Commencer
-                  </button>
-                )}
-              </div>
-            ) : posts.length === 0 ? (
-              <div
-                style={{
-                  background: colors.card,
-                  borderRadius: 12,
-                  border: `1px solid ${colors.border}`,
-                  padding: "32px 20px",
-                  textAlign: "center",
-                  color: colors.muted,
-                  fontSize: 14,
-                }}
-              >
-                Aucune publication planifiee. Cliquez sur &quot;+ Nouvelle
-                publication&quot; pour commencer.
-              </div>
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 12,
-                }}
-              >
-                {posts.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    running={runningId === post.id}
-                    deleting={deletingId === post.id}
-                    toggling={togglingId === post.id}
-                    confirmDelete={confirmDeleteId === post.id}
-                    runResult={
-                      runResult?.postId === post.id
-                        ? runResult.result
-                        : null
-                    }
-                    analytics={
-                      post.lastPinId
-                        ? analyticsCache[post.lastPinId] || null
-                        : null
-                    }
-                    previews={previews}
-                    colors={colors}
-                    isMobile={isMobile}
-                    onEdit={() => openEditForm(post)}
-                    onRun={() => runPost(post.id)}
-                    onToggle={() => togglePost(post)}
-                    onDelete={() => {
-                      if (confirmDeleteId === post.id) {
-                        deletePost(post.id);
-                      } else {
-                        setConfirmDeleteId(post.id);
-                      }
-                    }}
-                    onCancelDelete={() => setConfirmDeleteId(null)}
-                    onDismissResult={() => setRunResult(null)}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* ============================================================= */}
-            {/* REPUBLICATION                                                  */}
-            {/* ============================================================= */}
-            <div style={{ marginTop: isMobile ? 20 : 28 }}>
-              <SectionTitle colors={colors}>Republication</SectionTitle>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(200px, 1fr))",
-                  gap: 10,
-                  marginBottom: 16,
-                }}
-              >
-                {/* Strategy 1: Meilleur Pin */}
-                <div
-                  style={{
-                    background: republishStrategy === "best_performer" ? `${colors.accent}11` : colors.card,
-                    borderRadius: 12,
-                    border: `1px solid ${republishStrategy === "best_performer" ? colors.accent : colors.border}`,
-                    padding: isMobile ? "12px 14px" : "14px 16px",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                  }}
-                  onClick={() => setRepublishStrategy(republishStrategy === "best_performer" ? null : "best_performer")}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                    <span style={{ fontSize: 18 }}>{"\u2605"}</span>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>Meilleur Pin</span>
-                  </div>
-                  <p style={{ fontSize: 12, color: colors.muted, margin: 0, lineHeight: 1.5 }}>
-                    Republier le pin le plus performant avec un nouveau texte
-                  </p>
-                </div>
-
-                {/* Strategy 2: Nouveau Texte */}
-                <div
-                  style={{
-                    background: republishStrategy === "new_description" ? `${colors.accent}11` : colors.card,
-                    borderRadius: 12,
-                    border: `1px solid ${republishStrategy === "new_description" ? colors.accent : colors.border}`,
-                    padding: isMobile ? "12px 14px" : "14px 16px",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                  }}
-                  onClick={() => setRepublishStrategy(republishStrategy === "new_description" ? null : "new_description")}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                    <span style={{ fontSize: 18 }}>{"\u21BB"}</span>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>Nouveau Texte</span>
-                  </div>
-                  <p style={{ fontSize: 12, color: colors.muted, margin: 0, lineHeight: 1.5 }}>
-                    Meme image, nouveau titre et description
-                  </p>
-                </div>
-
-                {/* Strategy 3: Autre Tableau */}
-                <div
-                  style={{
-                    background: republishStrategy === "other_board" ? `${colors.accent}11` : colors.card,
-                    borderRadius: 12,
-                    border: `1px solid ${republishStrategy === "other_board" ? colors.accent : colors.border}`,
-                    padding: isMobile ? "12px 14px" : "14px 16px",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                  }}
-                  onClick={() => setRepublishStrategy(republishStrategy === "other_board" ? null : "other_board")}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                    <span style={{ fontSize: 18 }}>{"\u25A6"}</span>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>Autre Tableau</span>
-                  </div>
-                  <p style={{ fontSize: 12, color: colors.muted, margin: 0, lineHeight: 1.5 }}>
-                    Publier sur un autre tableau Pinterest
-                  </p>
-                </div>
-
-                {/* Strategy 4: Test Horaire */}
-                <div
-                  style={{
-                    background: republishStrategy === "different_time" ? `${colors.accent}11` : colors.card,
-                    borderRadius: 12,
-                    border: `1px solid ${republishStrategy === "different_time" ? colors.accent : colors.border}`,
-                    padding: isMobile ? "12px 14px" : "14px 16px",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                  }}
-                  onClick={() => setRepublishStrategy(republishStrategy === "different_time" ? null : "different_time")}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                    <span style={{ fontSize: 18 }}>{"\u23F0"}</span>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>Test Horaire</span>
-                  </div>
-                  <p style={{ fontSize: 12, color: colors.muted, margin: 0, lineHeight: 1.5 }}>
-                    A/B test avec une heure differente
-                  </p>
-                </div>
-
-                {/* Strategy 5: Version Saison */}
-                <div
-                  style={{
-                    background: republishStrategy === "seasonal_refresh" ? `${colors.accent}11` : colors.card,
-                    borderRadius: 12,
-                    border: `1px solid ${republishStrategy === "seasonal_refresh" ? colors.accent : colors.border}`,
-                    padding: isMobile ? "12px 14px" : "14px 16px",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                  }}
-                  onClick={() => setRepublishStrategy(republishStrategy === "seasonal_refresh" ? null : "seasonal_refresh")}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                    <span style={{ fontSize: 18 }}>{"\uD83D\uDCC5"}</span>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>Version Saison</span>
-                  </div>
-                  <p style={{ fontSize: 12, color: colors.muted, margin: 0, lineHeight: 1.5 }}>
-                    Adapter le contenu au mois en cours
-                  </p>
-                </div>
-              </div>
-
-              {/* Expanded strategy panel */}
-              {republishStrategy && (
-                <div
-                  style={{
-                    background: colors.card,
-                    borderRadius: 12,
-                    border: `1px solid ${colors.accent}33`,
-                    padding: isMobile ? "12px 14px" : "16px 20px",
-                    animation: "fadeIn 0.3s ease",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      flexWrap: "wrap",
-                      marginBottom: republishResult ? 12 : 0,
-                    }}
-                  >
-                    {/* Preview selector (for strategies needing previewId) */}
-                    {["best_performer", "new_description", "different_time", "seasonal_refresh"].includes(republishStrategy) && (
-                      <div style={{ flex: 1, minWidth: isMobile ? "100%" : 200 }}>
-                        <label style={{ fontSize: 12, color: colors.muted, fontWeight: 600, display: "block", marginBottom: 4 }}>
-                          Preview source
-                        </label>
-                        <select
-                          value={republishPreviewId}
-                          onChange={(e) => setRepublishPreviewId(e.target.value)}
-                          style={{
-                            width: "100%",
-                            background: colors.bg,
-                            color: colors.text,
-                            border: `1px solid ${colors.border}`,
-                            borderRadius: 8,
-                            padding: "8px 12px",
-                            fontSize: 13,
-                            fontFamily: "inherit",
-                            outline: "none",
-                          }}
-                        >
-                          <option value="">Choisir un preview...</option>
-                          {previews
-                            .filter((p) => p.status === "published" || p.status === "approved")
-                            .slice(0, 20)
-                            .map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.content.title?.slice(0, 50) || "Sans titre"} — {new Date(p.createdAt).toLocaleDateString("fr-FR")}
-                              </option>
-                            ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {/* Board selector (for other_board) */}
-                    {republishStrategy === "other_board" && (
-                      <div style={{ flex: 1, minWidth: isMobile ? "100%" : 200 }}>
-                        <label style={{ fontSize: 12, color: colors.muted, fontWeight: 600, display: "block", marginBottom: 4 }}>
-                          Tableau cible
-                        </label>
-                        <select
-                          value={republishBoardId}
-                          onChange={(e) => setRepublishBoardId(e.target.value)}
-                          style={{
-                            width: "100%",
-                            background: colors.bg,
-                            color: colors.text,
-                            border: `1px solid ${colors.border}`,
-                            borderRadius: 8,
-                            padding: "8px 12px",
-                            fontSize: 13,
-                            fontFamily: "inherit",
-                            outline: "none",
-                          }}
-                        >
-                          <option value="">Choisir un tableau...</option>
-                          {boards.map((b) => (
-                            <option key={b.id} value={b.id}>
-                              {b.name} ({b.pinCount} pins)
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {/* Action button */}
-                    <div style={{ flexShrink: 0, alignSelf: "flex-end" }}>
-                      <button
-                        onClick={() => handleRepublish(republishStrategy)}
-                        disabled={republishLoading}
-                        style={{
-                          background: republishLoading
-                            ? colors.border
-                            : "linear-gradient(135deg, #e63232, #ff4444)",
-                          color: republishLoading ? colors.muted : "#0a0a0f",
-                          border: "none",
-                          borderRadius: 8,
-                          padding: "10px 20px",
-                          fontSize: 13,
-                          fontWeight: 600,
-                          cursor: republishLoading ? "not-allowed" : "pointer",
-                          fontFamily: "inherit",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {republishLoading
-                          ? "En cours..."
-                          : republishStrategy === "best_performer" || republishStrategy === "other_board"
-                            ? "Republier"
-                            : "Generer"}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Republish result */}
-                  {republishResult && (
-                    <div
-                      style={{
-                        background: republishResult.success ? "#14532d22" : "#7f1d1d22",
-                        border: `1px solid ${republishResult.success ? "#16653466" : "#991b1b66"}`,
-                        borderRadius: 8,
-                        padding: "10px 14px",
-                        fontSize: 13,
-                        color: republishResult.success ? "#86efac" : "#fca5a5",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 8,
-                      }}
-                    >
-                      <span>{republishResult.message || (republishResult.success ? "Republication reussie" : "Erreur")}</span>
-                      <button
-                        onClick={() => setRepublishResult(null)}
-                        style={{
-                          background: "transparent",
-                          border: "none",
-                          color: colors.muted,
-                          cursor: "pointer",
-                          fontSize: 14,
-                          padding: "2px 6px",
-                        }}
-                      >
-                        {"\u2715"}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* ================================================================= */}
-        {/* TAB: Calendrier                                                    */}
-        {/* ================================================================= */}
-        {activeTab === "calendrier" && (
-          <section style={{ marginBottom: padding }}>
-            {/* Batch Mode */}
-            <div
-              style={{
-                background: colors.card,
-                borderRadius: 12,
-                border: `1px solid ${colors.border}`,
-                padding: isMobile ? "12px 14px" : "16px 20px",
-                marginBottom: 20,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  flexWrap: "wrap",
-                }}
-              >
-                <SectionTitle colors={colors} style={{ marginBottom: 0, flex: 1 }}>
-                  Generation par lot
-                </SectionTitle>
-                <select
-                  value={batchBoardId}
-                  onChange={(e) => setBatchBoardId(e.target.value)}
-                  style={{
-                    ...inputStyle,
-                    width: "auto",
-                    minWidth: isMobile ? 140 : 200,
-                  }}
-                >
-                  <option value="">Choisir un tableau</option>
-                  {boards.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={generateBatch}
-                  disabled={batchLoading || !batchBoardId}
-                  style={{
-                    background:
-                      batchLoading || !batchBoardId
-                        ? colors.border
-                        : "linear-gradient(135deg, #e63232, #ff4444)",
-                    color:
-                      batchLoading || !batchBoardId
-                        ? colors.muted
-                        : "#0a0a0f",
-                    border: "none",
-                    borderRadius: 8,
-                    padding: "10px 20px",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor:
-                      batchLoading || !batchBoardId
-                        ? "not-allowed"
-                        : "pointer",
-                    fontFamily: "inherit",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {batchLoading
-                    ? "Generation en cours..."
-                    : "Generer la semaine"}
-                </button>
-              </div>
-              {batchLoading && (
-                <p
-                  style={{
-                    fontSize: 12,
-                    color: colors.accent,
-                    margin: "8px 0 0",
-                  }}
-                >
-                  Generation de 14 previews (7 jours x 2/jour). Cela peut
-                  prendre plusieurs minutes...
-                </p>
-              )}
-              {batchResult && (
-                <p
-                  style={{
-                    fontSize: 13,
-                    color: batchResult.startsWith("Erreur")
-                      ? "#fca5a5"
-                      : "#86efac",
-                    margin: "8px 0 0",
-                  }}
-                >
-                  {batchResult}
-                </p>
-              )}
-            </div>
-
-            {/* Rapid mode toggle */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 12,
-              }}
-            >
-              <SectionTitle colors={colors} style={{ marginBottom: 0 }}>
-                Calendrier
-              </SectionTitle>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                <button
-                  onClick={() => setRapidMode(!rapidMode)}
-                  style={{
-                    background: rapidMode ? `${colors.accent}22` : "transparent",
-                    color: rapidMode ? colors.accent : colors.muted,
-                    border: `1px solid ${rapidMode ? colors.accent : colors.border}`,
-                    borderRadius: 6,
-                    padding: "6px 12px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  Mode rapide
-                </button>
-                <SmallButton
-                  onClick={() =>
-                    setCalendarWeekOffset(Math.max(calendarWeekOffset - 1, -4))
-                  }
-                  disabled={calendarWeekOffset <= -4}
-                  colors={colors}
-                >
-                  {"\u2190"} Sem.
-                </SmallButton>
-                <SmallButton
-                  onClick={() => setCalendarWeekOffset(0)}
-                  variant={calendarWeekOffset === 0 ? "success" : "default"}
-                  colors={colors}
-                >
-                  Aujourd{"'"}hui
-                </SmallButton>
-                <SmallButton
-                  onClick={() =>
-                    setCalendarWeekOffset(
-                      Math.min(calendarWeekOffset + 1, 4),
-                    )
-                  }
-                  disabled={calendarWeekOffset >= 4}
-                  colors={colors}
-                >
-                  Sem. {"\u2192"}
-                </SmallButton>
-              </div>
-            </div>
-
-            {/* Rapid mode carousel */}
-            {rapidMode && rapidPreviews.length > 0 && (
-              <div
-                style={{
-                  marginBottom: 20,
-                  background: colors.card,
-                  borderRadius: 12,
-                  border: `1px solid ${colors.accent}44`,
-                  padding: isMobile ? 14 : 20,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 12,
-                  }}
-                >
-                  <span style={{ fontSize: 13, color: colors.muted }}>
-                    Apercu {rapidIndex + 1} / {rapidPreviews.length}
-                  </span>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <SmallButton
-                      onClick={() =>
-                        setRapidIndex(Math.max(0, rapidIndex - 1))
-                      }
-                      disabled={rapidIndex <= 0}
-                      colors={colors}
-                    >
-                      {"\u2190"} Prec.
-                    </SmallButton>
-                    <SmallButton
-                      onClick={() =>
-                        setRapidIndex(
-                          Math.min(rapidPreviews.length - 1, rapidIndex + 1),
-                        )
-                      }
-                      disabled={rapidIndex >= rapidPreviews.length - 1}
-                      colors={colors}
-                    >
-                      Suiv. {"\u2192"}
-                    </SmallButton>
-                  </div>
-                </div>
-                {(() => {
-                  const rp = rapidPreviews[rapidIndex];
-                  if (!rp) return null;
-                  return (
-                    <div>
-                      {rp.imageBase64 && (
-                        <div
-                          style={{
-                            textAlign: "center",
-                            marginBottom: 12,
-                          }}
-                        >
-                          <img
-                            src={`data:${rp.imageContentType || "image/jpeg"};base64,${rp.imageBase64}`}
-                            alt="Preview"
-                            style={{
-                              maxWidth: "100%",
-                              maxHeight: isMobile ? 300 : 400,
-                              borderRadius: 10,
-                              border: `1px solid ${colors.border}`,
-                            }}
-                          />
-                        </div>
-                      )}
-                      <p
-                        style={{
-                          fontSize: 16,
-                          fontWeight: 600,
-                          margin: "0 0 6px",
-                        }}
-                      >
-                        {rp.content.title || "Sans titre"}
-                      </p>
-                      <p
-                        style={{
-                          fontSize: 13,
-                          color: colors.muted,
-                          margin: "0 0 12px",
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        {rp.content.description || "—"}
-                      </p>
-                      <div
-                        style={{ display: "flex", gap: 8, flexWrap: "wrap" }}
-                      >
-                        <button
-                          onClick={() => {
-                            approvePreview(rp.id);
-                            if (rapidIndex < rapidPreviews.length - 1) {
-                              setRapidIndex(rapidIndex + 1);
-                            }
-                          }}
-                          style={{
-                            background: "#14532d",
-                            color: "#86efac",
-                            border: "1px solid #166534",
-                            borderRadius: 8,
-                            padding: "10px 24px",
-                            fontSize: 14,
-                            fontWeight: 600,
-                            cursor: "pointer",
-                            fontFamily: "inherit",
-                          }}
-                        >
-                          Approuver
-                        </button>
-                        <button
-                          onClick={() => {
-                            rejectPreview(rp.id);
-                            if (rapidIndex < rapidPreviews.length - 1) {
-                              setRapidIndex(rapidIndex + 1);
-                            }
-                          }}
-                          style={{
-                            background: "#7f1d1d",
-                            color: "#fca5a5",
-                            border: "1px solid #991b1b",
-                            borderRadius: 8,
-                            padding: "10px 24px",
-                            fontSize: 14,
-                            fontWeight: 600,
-                            cursor: "pointer",
-                            fontFamily: "inherit",
-                          }}
-                        >
-                          Rejeter
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
-
-            {/* Calendar grid */}
-            {previewsLoading ? (
-              <div
-                style={{
-                  background: colors.card,
-                  borderRadius: 12,
-                  border: `1px solid ${colors.border}`,
-                  padding: "32px 20px",
-                  textAlign: "center",
-                  color: colors.muted,
-                  fontSize: 14,
-                }}
-              >
-                Chargement du calendrier...
-              </div>
-            ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: isMobile
-                    ? "1fr"
-                    : "repeat(7, 1fr)",
-                  gap: 8,
-                }}
-              >
-                {calendarDays.map((day, idx) => {
-                  const dayKey = day.toISOString().slice(0, 10);
-                  const dayPreviews = previewsByDay[dayKey] || [];
-                  const isToday = isSameDay(day, new Date());
-                  const dayIdx = idx % 7;
-
-                  return (
-                    <div
-                      key={dayKey}
-                      style={{
-                        background: isToday
-                          ? dark
-                            ? "#1a1a22"
-                            : "#fffde6"
-                          : colors.card,
-                        borderRadius: 10,
-                        border: `1px solid ${isToday ? `${colors.accent}44` : colors.border}`,
-                        minHeight: isMobile ? 80 : 180,
-                        display: "flex",
-                        flexDirection: "column",
-                      }}
-                    >
-                      {/* Day header */}
-                      <div
-                        style={{
-                          padding: isMobile
-                            ? "8px 10px 6px"
-                            : "10px 10px 8px",
-                          borderBottom: `1px solid ${colors.border}`,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            color: isToday ? colors.accent : colors.muted,
-                            textTransform: "uppercase",
-                            letterSpacing: 0.5,
-                          }}
-                        >
-                          {DAYS_FR[dayIdx]}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: 13,
-                            fontWeight: isToday ? 700 : 500,
-                            color: isToday ? colors.accent : colors.text,
-                          }}
-                        >
-                          {formatDateShort(day)}
-                        </span>
-                      </div>
-
-                      {/* Posts in this day */}
-                      <div
-                        style={{
-                          flex: 1,
-                          padding: 6,
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 4,
-                          overflowY: "auto",
-                        }}
-                      >
-                        {dayPreviews.length === 0 ? (
-                          <span
-                            style={{
-                              fontSize: 11,
-                              color: colors.border,
-                              textAlign: "center",
-                              marginTop: isMobile ? 8 : 20,
-                            }}
-                          >
-                            —
-                          </span>
-                        ) : (
-                          dayPreviews.map((prev) => (
-                            <button
-                              key={prev.id}
-                              onClick={() => openPreviewModal(prev)}
-                              style={{
-                                background: colors.bg,
-                                borderRadius: 6,
-                                border: `1px solid ${statusColors[prev.status] || colors.border}33`,
-                                padding: "6px 8px",
-                                cursor: "pointer",
-                                textAlign: "left",
-                                display: "block",
-                                width: "100%",
-                                fontFamily: "inherit",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 4,
-                                  marginBottom: 2,
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    fontSize: 10,
-                                    color: colors.muted,
-                                    fontWeight: 600,
-                                    fontVariantNumeric: "tabular-nums",
-                                  }}
-                                >
-                                  {padTime(prev.scheduledHour)}:
-                                  {padTime(prev.scheduledMinute)}
-                                </span>
-                                <span
-                                  style={{
-                                    fontSize: 9,
-                                    color:
-                                      statusColors[prev.status] ||
-                                      colors.muted,
-                                    fontWeight: 600,
-                                    textTransform: "uppercase",
-                                    letterSpacing: 0.3,
-                                  }}
-                                >
-                                  {statusLabels[prev.status] ||
-                                    prev.status}
-                                </span>
-                              </div>
-                              <p
-                                style={{
-                                  fontSize: 11,
-                                  color: colors.text,
-                                  margin: 0,
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
-                                  lineHeight: 1.3,
-                                }}
-                              >
-                                {prev.content.title || "Sans titre"}
-                              </p>
-                              {prev.variantTotal &&
-                                prev.variantTotal > 1 && (
-                                  <span
-                                    style={{
-                                      fontSize: 9,
-                                      color: colors.muted,
-                                    }}
-                                  >
-                                    Variante{" "}
-                                    {(prev.variantIndex || 0) + 1}/
-                                    {prev.variantTotal}
-                                  </span>
-                                )}
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* ================================================================= */}
-        {/* TAB: Prompts                                                       */}
-        {/* ================================================================= */}
-        {activeTab === "prompts" && (
-          <section style={{ marginBottom: padding }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 12,
-              }}
-            >
-              <SectionTitle colors={colors} style={{ marginBottom: 0 }}>
-                Bibliotheque de prompts
-              </SectionTitle>
-              <SmallButton
-                onClick={() => setPromptsOpen(!promptsOpen)}
-                colors={colors}
-              >
-                {promptsOpen ? "Replier" : "Deplier"}
-              </SmallButton>
-            </div>
-
-            {promptsOpen && (
-              <>
-                {promptsLoading ? (
-                  <div
-                    style={{
-                      background: colors.card,
-                      borderRadius: 12,
-                      border: `1px solid ${colors.border}`,
-                      padding: "32px 20px",
-                      textAlign: "center",
-                      color: colors.muted,
-                      fontSize: 14,
-                    }}
-                  >
-                    Chargement des prompts...
-                  </div>
-                ) : prompts.length === 0 ? (
-                  <div
-                    style={{
-                      background: colors.card,
-                      borderRadius: 12,
-                      border: `1px solid ${colors.border}`,
-                      padding: "32px 20px",
-                      textAlign: "center",
-                      color: colors.muted,
-                      fontSize: 14,
-                    }}
-                  >
-                    Aucun prompt sauvegarde. Les prompts sont crees
-                    automatiquement lors des publications.
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 10,
-                    }}
-                  >
-                    {prompts.map((prompt) => (
-                      <PromptCard
-                        key={prompt.id}
-                        prompt={prompt}
-                        deleting={deletingPromptId === prompt.id}
-                        onDelete={() => deletePrompt(prompt.id)}
-                        colors={colors}
-                        isMobile={isMobile}
-                      />
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-          </section>
-        )}
-
-        {/* ================================================================= */}
-        {/* TAB: Perdus                                                        */}
-        {/* ================================================================= */}
-        {activeTab === "perdus" && (
-          <section style={{ marginBottom: padding }}>
-            <SectionTitle colors={colors}>Posts perdus</SectionTitle>
-            {previewsLoading ? (
-              <div
-                style={{
-                  background: colors.card,
-                  borderRadius: 12,
-                  border: `1px solid ${colors.border}`,
-                  padding: "32px 20px",
-                  textAlign: "center",
-                  color: colors.muted,
-                  fontSize: 14,
-                }}
-              >
-                Chargement...
-              </div>
-            ) : rejectedPreviews.length === 0 ? (
-              <div
-                style={{
-                  background: colors.card,
-                  borderRadius: 12,
-                  border: `1px solid ${colors.border}`,
-                  padding: "32px 20px",
-                  textAlign: "center",
-                  color: colors.muted,
-                  fontSize: 14,
-                }}
-              >
-                Aucun post rejete. Les posts declines apparaitront ici.
-              </div>
-            ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: isMobile
-                    ? "1fr"
-                    : "repeat(auto-fill, minmax(280px, 1fr))",
-                  gap: 12,
-                }}
-              >
-                {rejectedPreviews.map((prev) => (
-                  <div
-                    key={prev.id}
-                    style={{
-                      background: colors.card,
-                      borderRadius: 12,
-                      border: `1px solid ${colors.border}`,
-                      overflow: "hidden",
-                    }}
-                  >
-                    {prev.imageBase64 ? (
-                      <img
-                        src={`data:${prev.imageContentType || "image/jpeg"};base64,${prev.imageBase64}`}
-                        alt="Preview"
-                        style={{
-                          width: "100%",
-                          height: 160,
-                          objectFit: "cover",
-                        }}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          width: "100%",
-                          height: 160,
-                          background:
-                            "linear-gradient(135deg, #ef444433, #e6323233)",
-                        }}
-                      />
-                    )}
-                    <div style={{ padding: "12px 14px" }}>
-                      <p
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 600,
-                          margin: "0 0 4px",
-                          color: colors.text,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {prev.content.title || "Sans titre"}
-                      </p>
-                      <p
-                        style={{
-                          fontSize: 12,
-                          color: colors.muted,
-                          margin: "0 0 10px",
-                        }}
-                      >
-                        {new Date(prev.scheduledFor).toLocaleDateString(
-                          "fr-FR",
-                          {
-                            day: "numeric",
-                            month: "short",
-                          },
-                        )}
-                      </p>
-                      <button
-                        onClick={() => reusePreview(prev.id)}
-                        style={{
-                          background: `${colors.accent}22`,
-                          color: colors.accent,
-                          border: `1px solid ${colors.accent}66`,
-                          borderRadius: 8,
-                          padding: "6px 16px",
-                          fontSize: 12,
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                          width: "100%",
-                        }}
-                      >
-                        Reutiliser
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* ================================================================= */}
-        {/* TAB: Test                                                          */}
-        {/* ================================================================= */}
-        {activeTab === "test" && (
-          <>
-            <section style={{ marginBottom: padding }}>
-              <SectionTitle colors={colors}>Test du pipeline</SectionTitle>
-              <button
-                onClick={runTest}
-                disabled={testLoading}
-                style={{
-                  background: testLoading
-                    ? colors.border
-                    : "linear-gradient(135deg, #e63232, #ff4444)",
-                  color: testLoading ? colors.muted : "#0a0a0f",
-                  border: "none",
-                  borderRadius: 10,
-                  padding: "12px 28px",
-                  fontSize: 15,
-                  fontWeight: 600,
-                  cursor: testLoading ? "not-allowed" : "pointer",
-                  transition: "all 0.2s",
-                  fontFamily: "inherit",
-                }}
-              >
-                {testLoading
-                  ? "Generation en cours..."
-                  : "Lancer un test (dry-run)"}
-              </button>
-              <p
-                style={{
-                  fontSize: 13,
-                  color: colors.muted,
-                  marginTop: 8,
-                }}
-              >
-                Genere image + contenu Pinterest + post LinkedIn sans
-                publier. Necessite OPENAI_API_KEY.
-              </p>
-            </section>
-
-            {testResult && (
-              <section style={{ marginBottom: padding }}>
-                <SectionTitle colors={colors}>Resultat du test</SectionTitle>
-                <PipelineResultCard
-                  result={testResult}
-                  onDismiss={() => setTestResult(null)}
-                  colors={colors}
-                />
-              </section>
-            )}
-          </>
-        )}
-      </main>
-
-      {/* ================================================================= */}
-      {/* Preview Modal (overlay)                                            */}
-      {/* ================================================================= */}
-      {previewModalData && (
-        <PreviewModal
-          preview={
-            previewModalVariants[previewVariantTab] || previewModalData
-          }
-          variants={previewModalVariants}
-          activeVariant={previewVariantTab}
-          onVariantChange={setPreviewVariantTab}
-          onClose={closePreviewModal}
-          onApprove={approvePreview}
-          onReject={rejectPreview}
-          onPublish={publishPreview}
-          actionLoading={previewActionLoading}
-          colors={colors}
-          dark={dark}
-          isMobile={isMobile}
-        />
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Sub-Components
-// ---------------------------------------------------------------------------
-
-function SectionTitle({
-  children,
-  style,
-  colors,
-}: {
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-  colors: ThemeColors;
-}) {
-  return (
-    <h2
-      style={{
-        fontSize: 13,
-        fontWeight: 600,
-        color: colors.muted,
-        textTransform: "uppercase",
-        letterSpacing: 1,
-        margin: 0,
-        marginBottom: 12,
-        ...style,
-      }}
-    >
-      {children}
-    </h2>
-  );
-}
-
-function KpiCard({
-  label,
-  value,
-  color,
-  colors,
-}: {
-  label: string;
-  value: string;
-  color: string;
-  colors: ThemeColors;
-}) {
-  return (
-    <div
-      style={{
-        background: colors.card,
-        borderRadius: 12,
-        border: `1px solid ${colors.border}`,
-        padding: "14px 16px",
-      }}
-    >
-      <p
-        style={{
-          fontSize: 12,
-          color: colors.muted,
-          margin: 0,
-          marginBottom: 4,
-        }}
-      >
-        {label}
-      </p>
-      <p style={{ fontSize: 22, fontWeight: 700, margin: 0, color }}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function FormLabel({
-  children,
-  colors,
-}: {
-  children: React.ReactNode;
-  colors: ThemeColors;
-}) {
-  return (
-    <label
-      style={{
-        display: "block",
-        fontSize: 12,
-        color: colors.muted,
-        fontWeight: 600,
-        marginBottom: 6,
-      }}
-    >
-      {children}
-    </label>
-  );
-}
-
-function SmallButton({
-  children,
-  onClick,
-  disabled,
-  variant = "default",
-  title,
-  colors,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  disabled?: boolean;
-  variant?: "default" | "danger" | "success" | "ghost";
-  title?: string;
-  colors: ThemeColors;
-}) {
-  const bgMap = {
-    default: colors.border,
-    danger: "#7f1d1d",
-    success: "#14532d",
-    ghost: "transparent",
-  };
-  const colorMap = {
-    default: colors.text,
-    danger: "#fca5a5",
-    success: "#86efac",
-    ghost: colors.muted,
-  };
-  const borderMap = {
-    default: `1px solid ${colors.border}`,
-    danger: "1px solid #991b1b",
-    success: "1px solid #166534",
-    ghost: `1px solid ${colors.border}`,
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-      style={{
-        background: disabled ? colors.bg : bgMap[variant],
-        color: disabled ? colors.muted : colorMap[variant],
-        border: borderMap[variant],
-        borderRadius: 6,
-        padding: "6px 12px",
-        fontSize: 12,
-        fontWeight: 500,
-        cursor: disabled ? "not-allowed" : "pointer",
-        whiteSpace: "nowrap",
-        transition: "all 0.15s",
-        fontFamily: "inherit",
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Post Card (with analytics + feed visuel)
-// ---------------------------------------------------------------------------
-
-function PostCard({
-  post,
-  running,
-  deleting,
-  toggling,
-  confirmDelete,
-  runResult,
-  analytics,
-  previews,
-  colors,
-  isMobile,
-  onEdit,
-  onRun,
-  onToggle,
-  onDelete,
-  onCancelDelete,
-  onDismissResult,
-}: {
-  post: ScheduledPost;
-  running: boolean;
-  deleting: boolean;
-  toggling: boolean;
-  confirmDelete: boolean;
-  runResult: PipelineResult | null;
-  analytics: PinAnalytics | null;
-  previews: PreviewData[];
-  colors: ThemeColors;
-  isMobile: boolean;
-  onEdit: () => void;
-  onRun: () => void;
-  onToggle: () => void;
-  onDelete: () => void;
-  onCancelDelete: () => void;
-  onDismissResult: () => void;
-}) {
-  // Find latest preview image for this post
-  const latestPreview = previews
-    .filter((p) => p.postId === post.id && p.imageBase64)
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    )[0];
-
-  return (
-    <div
-      style={{
-        background: colors.card,
-        borderRadius: 12,
-        border: `1px solid ${post.enabled ? colors.border : colors.bg}`,
-        padding: isMobile ? "12px 14px" : "16px 20px",
-        opacity: post.enabled ? 1 : 0.7,
-        transition: "opacity 0.2s",
-        animation: "fadeIn 0.3s ease",
-      }}
-    >
-      {/* Top row */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: isMobile ? "flex-start" : "flex-start",
-          gap: 12,
-          marginBottom: 10,
-          flexDirection: isMobile ? "column" : "row",
-        }}
-      >
-        {/* Image thumbnail */}
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            alignItems: "flex-start",
-            flex: 1,
-            minWidth: 0,
-            width: isMobile ? "100%" : undefined,
-          }}
-        >
-          {latestPreview ? (
-            <img
-              src={`data:${latestPreview.imageContentType || "image/jpeg"};base64,${latestPreview.imageBase64}`}
-              alt=""
-              style={{
-                width: 64,
-                height: 96,
-                objectFit: "cover",
-                borderRadius: 8,
-                border: `1px solid ${colors.border}`,
-                flexShrink: 0,
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: 64,
-                height: 96,
-                borderRadius: 8,
-                background: `linear-gradient(135deg, ${colors.accent}33, #3b82f633)`,
-                flexShrink: 0,
-              }}
-            />
-          )}
-
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {/* Toggle + Name */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                marginBottom: 4,
-              }}
-            >
-              {/* Toggle */}
-              <button
-                onClick={onToggle}
-                disabled={toggling}
-                title={post.enabled ? "Desactiver" : "Activer"}
-                style={{
-                  width: 38,
-                  height: 22,
-                  borderRadius: 11,
-                  border: "none",
-                  background: post.enabled ? colors.accent : colors.border,
-                  cursor: toggling ? "not-allowed" : "pointer",
-                  position: "relative",
-                  flexShrink: 0,
-                  transition: "background 0.2s",
-                }}
-              >
-                <div
-                  style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: "50%",
-                    background: "#fff",
-                    position: "absolute",
-                    top: 3,
-                    left: post.enabled ? 19 : 3,
-                    transition: "left 0.2s",
-                  }}
-                />
-              </button>
-
-              <span style={{ fontSize: 15, fontWeight: 600 }}>
-                {post.name}
-              </span>
-              {post.lastRunStatus && (
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    background:
-                      post.lastRunStatus === "success"
-                        ? "#22c55e"
-                        : "#ef4444",
-                    display: "inline-block",
-                    flexShrink: 0,
-                  }}
-                  title={
-                    post.lastRunStatus === "success"
-                      ? "Dernier run reussi"
-                      : `Erreur: ${post.lastRunError || "inconnue"}`
-                  }
-                />
-              )}
-            </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: isMobile ? 8 : 16,
-                flexWrap: "wrap",
-                fontSize: 13,
-                color: colors.muted,
-              }}
-            >
-              <span title="Tableau(x)">
-                <span style={{ color: "#ec4899" }}>
-                  {"\u25CF"}
-                </span>{" "}
-                {post.boardNames && post.boardNames.length > 1
-                  ? `${post.boardNames[0]} +${post.boardNames.length - 1}`
-                  : post.boardName}
-              </span>
-              <span title="Frequence">
-                <span style={{ color: colors.accent }}>
-                  {"\u25CF"}
-                </span>{" "}
-                {cronToHuman(post.cronExpression)}
-              </span>
-              {post.theme && !isMobile && (
-                <span
-                  title="Theme"
-                  style={{
-                    maxWidth: 220,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <span style={{ color: "#3b82f6" }}>
-                    {"\u25CF"}
-                  </span>{" "}
-                  {post.theme}
-                </span>
-              )}
-              {post.lastRunAt && (
-                <span
-                  title={`Dernier run: ${new Date(post.lastRunAt).toLocaleString()}`}
-                >
-                  Dernier run: {timeAgo(post.lastRunAt)}
-                </span>
-              )}
-            </div>
-
-            {/* Inline analytics */}
-            {analytics && (
-              <div
-                style={{
-                  display: "flex",
-                  gap: 12,
-                  marginTop: 6,
-                  fontSize: 11,
-                }}
-              >
-                <span style={{ color: "#3b82f6" }}>
-                  {analytics.impressions} impressions
-                </span>
-                <span style={{ color: "#22c55e" }}>
-                  {analytics.saves} saves
-                </span>
-                <span style={{ color: colors.accent }}>
-                  {analytics.clicks} clics
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div
-          style={{
-            display: "flex",
-            gap: 6,
-            flexShrink: 0,
-            flexWrap: "wrap",
-          }}
-        >
-          <SmallButton onClick={onEdit} title="Modifier" colors={colors}>
-            Modifier
-          </SmallButton>
-          <SmallButton
-            onClick={onRun}
-            disabled={running || !post.enabled}
-            variant="success"
-            title="Publier maintenant"
-            colors={colors}
-          >
-            {running ? "Publication..." : "Publier"}
-          </SmallButton>
-          {confirmDelete ? (
-            <div style={{ display: "flex", gap: 4 }}>
-              <SmallButton
-                onClick={onDelete}
-                disabled={deleting}
-                variant="danger"
-                colors={colors}
-              >
-                {deleting ? "..." : "Confirmer"}
-              </SmallButton>
-              <SmallButton
-                onClick={onCancelDelete}
-                variant="ghost"
-                colors={colors}
-              >
-                Non
-              </SmallButton>
-            </div>
-          ) : (
-            <SmallButton
-              onClick={onDelete}
-              variant="danger"
-              title="Supprimer"
-              colors={colors}
-            >
-              Supprimer
-            </SmallButton>
-          )}
-        </div>
-      </div>
-
-      {/* Last run error inline */}
-      {post.lastRunStatus === "error" && post.lastRunError && (
-        <div
-          style={{
-            background: "#1c1012",
-            border: "1px solid #ef444433",
-            borderRadius: 8,
-            padding: "8px 12px",
-            color: "#fca5a5",
-            fontSize: 12,
-            fontFamily: "monospace",
-            marginTop: 8,
-          }}
-        >
-          {post.lastRunError}
-        </div>
-      )}
-
-      {/* Run result inline */}
-      {runResult && (
-        <div style={{ marginTop: 12 }}>
-          <PipelineResultCard
-            result={runResult}
-            onDismiss={onDismissResult}
-            colors={colors}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Pipeline Result Card
-// ---------------------------------------------------------------------------
-
-function PipelineResultCard({
-  result,
-  onDismiss,
-  colors,
-}: {
-  result: PipelineResult;
-  onDismiss: () => void;
-  colors: ThemeColors;
-}) {
-  return (
-    <div
-      style={{
-        background: colors.card,
-        borderRadius: 12,
-        border: `1px solid ${result.success ? "#22c55e33" : "#ef444433"}`,
-        padding: 20,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          marginBottom: 16,
-        }}
-      >
-        <span
-          style={{
-            width: 10,
-            height: 10,
-            borderRadius: "50%",
-            background: result.success ? "#22c55e" : "#ef4444",
-            display: "inline-block",
-          }}
-        />
-        <span style={{ fontWeight: 600, fontSize: 14 }}>
-          {result.success ? "Succes" : "Echec"}
-        </span>
-        <span style={{ color: colors.muted, fontSize: 13 }}>
-          — {(result.durationMs / 1000).toFixed(1)}s
-        </span>
-        {result.postName && (
-          <span
-            style={{
-              color: colors.muted,
-              fontSize: 13,
-              marginLeft: 4,
-            }}
-          >
-            ({result.postName})
-          </span>
-        )}
-        <button
-          onClick={onDismiss}
-          style={{
-            marginLeft: "auto",
-            background: "transparent",
-            border: "none",
-            color: colors.muted,
-            fontSize: 16,
-            cursor: "pointer",
-            padding: "2px 6px",
-          }}
-        >
-          {"\u2715"}
-        </button>
-      </div>
-
-      {result.error && (
-        <div
-          style={{
-            background: "#1c1012",
-            border: "1px solid #ef444433",
-            borderRadius: 8,
-            padding: 12,
-            color: "#fca5a5",
-            fontSize: 14,
-            fontFamily: "monospace",
-            marginBottom: 12,
-          }}
-        >
-          {result.error}
-        </div>
-      )}
-
-      {result.imageBase64 && (
-        <div style={{ marginBottom: 16, textAlign: "center" }}>
-          <img
-            src={`data:image/jpeg;base64,${result.imageBase64}`}
-            alt="Image generee"
-            style={{
-              maxWidth: "100%",
-              maxHeight: 400,
-              borderRadius: 10,
-              border: `1px solid ${colors.border}`,
-            }}
-          />
-        </div>
-      )}
-
-      {result.prompt && (
-        <ResultBlock
-          title="Theme"
-          value={result.prompt.theme}
-          colors={colors}
-        />
-      )}
-      {result.content && (
-        <>
-          <ResultBlock
-            title="Titre Pinterest"
-            value={result.content.title}
-            colors={colors}
-          />
-          <ResultBlock
-            title="Description Pinterest"
-            value={result.content.description}
-            colors={colors}
-          />
-        </>
-      )}
-      {result.linkedin && (
-        <ResultBlock
-          title="Post LinkedIn"
-          value={result.linkedin.post}
-          colors={colors}
-        />
-      )}
-      {result.pin && (
-        <ResultBlock
-          title="Pin publie"
-          value={`ID: ${result.pin.pinId} — ${new Date(result.pin.createdAt).toLocaleString()}`}
-          colors={colors}
-        />
-      )}
-      {result.pins && result.pins.length > 0 && (
-        <ResultBlock
-          title="Pins publies"
-          value={result.pins
-            .map(
-              (p) =>
-                `ID: ${p.pinId} — ${new Date(p.createdAt).toLocaleString()}`,
-            )
-            .join("\n")}
-          colors={colors}
-        />
-      )}
-    </div>
-  );
-}
-
-function ResultBlock({
-  title,
-  value,
-  colors,
-}: {
-  title: string;
-  value: string;
-  colors: ThemeColors;
-}) {
-  return (
-    <div style={{ marginTop: 12 }}>
-      <p
-        style={{
-          fontSize: 12,
-          color: colors.muted,
-          margin: 0,
-          marginBottom: 4,
-          fontWeight: 600,
-        }}
-      >
-        {title}
-      </p>
-      <p
-        style={{
-          fontSize: 14,
-          margin: 0,
-          color: colors.text,
-          lineHeight: 1.5,
-          whiteSpace: "pre-wrap",
-        }}
-      >
-        {value}
-      </p>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Preview Modal
-// ---------------------------------------------------------------------------
-
-function PreviewModal({
-  preview,
-  variants,
-  activeVariant,
-  onVariantChange,
-  onClose,
-  onApprove,
-  onReject,
-  onPublish,
-  actionLoading,
-  colors,
-  dark,
-  isMobile,
-}: {
-  preview: PreviewData;
-  variants: PreviewData[];
-  activeVariant: number;
-  onVariantChange: (idx: number) => void;
-  onClose: () => void;
-  onApprove: (id: string) => void;
-  onReject: (id: string) => void;
-  onPublish: (id: string) => void;
-  actionLoading: boolean;
-  colors: ThemeColors;
-  dark: boolean;
-  isMobile: boolean;
-}) {
-  const current = variants[activeVariant] || preview;
-
-  // Internal platform tabs state
-  const [mPlatformTab, setMPlatformTab] = useState<"pinterest" | "linkedin" | "instagram" | "facebook">("pinterest");
-  const [mCopied, setMCopied] = useState<string | null>(null);
-
-  function mCopy(text: string, key: string) {
-    navigator.clipboard.writeText(text).then(() => {
-      setMCopied(key);
-      setTimeout(() => setMCopied(null), 2000);
-    });
-  }
-
-  // SEO score computation
-  const seoScore = useMemo(() => {
-    const desc = (current.content.description || "").toLowerCase();
-    const keywords = ["prismaflux", "automobile", "ia", "concession", "auto-prismaflux.com"];
-    let keywordCount = 0;
-    keywords.forEach((kw) => { if (desc.includes(kw)) keywordCount++; });
-    const hashtagCount = (desc.match(/#\w+/g) || []).length;
-    return Math.min(100, keywordCount * 20 + hashtagCount * 10);
-  }, [current.content.description]);
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: dark ? "rgba(0,0,0,0.8)" : "rgba(0,0,0,0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-        padding: isMobile ? 8 : 20,
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        style={{
-          background: colors.card,
-          borderRadius: 16,
-          border: `1px solid ${colors.border}`,
-          maxWidth: 800,
-          width: "100%",
-          maxHeight: "90vh",
-          overflow: "auto",
-          padding: 0,
-        }}
-      >
-        {/* Modal header */}
-        <div
-          style={{
-            padding: isMobile ? "12px 14px" : "16px 20px",
-            borderBottom: `1px solid ${colors.border}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            position: "sticky",
-            top: 0,
-            background: colors.card,
-            zIndex: 1,
-            borderRadius: "16px 16px 0 0",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>
-              Apercu
-            </h3>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: statusColors[current.status] || colors.muted,
-                textTransform: "uppercase",
-                padding: "2px 8px",
-                borderRadius: 4,
-                background: `${statusColors[current.status] || colors.muted}22`,
-              }}
-            >
-              {statusLabels[current.status] || current.status}
-            </span>
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: colors.muted,
-              fontSize: 20,
-              cursor: "pointer",
-              padding: "4px 8px",
-              lineHeight: 1,
-            }}
-          >
-            {"\u2715"}
-          </button>
-        </div>
-
-        {/* Variant tabs (A/B) */}
-        {variants.length > 1 && (
-          <div
-            style={{
-              display: "flex",
-              gap: 0,
-              borderBottom: `1px solid ${colors.border}`,
-              padding: isMobile ? "0 14px" : "0 20px",
-              overflowX: isMobile ? "auto" : "visible",
-            }}
-          >
-            {variants.map((v, idx) => (
-              <button
-                key={v.id}
-                onClick={() => onVariantChange(idx)}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  borderBottom:
-                    idx === activeVariant
-                      ? `2px solid ${colors.accent}`
-                      : "2px solid transparent",
-                  color:
-                    idx === activeVariant ? colors.accent : colors.muted,
-                  padding: "10px 18px",
-                  fontSize: 13,
-                  fontWeight: idx === activeVariant ? 600 : 500,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Variante {String.fromCharCode(65 + idx)}
-                {v.variantIndex !== undefined &&
-                  ` (#${v.variantIndex + 1})`}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Content */}
-        <div style={{ padding: isMobile ? 14 : 20 }}>
-          {/* Image */}
-          {current.imageBase64 && (
-            <div
-              style={{
-                textAlign: "center",
-                marginBottom: 20,
-              }}
-            >
-              <img
-                src={`data:${current.imageContentType || "image/jpeg"};base64,${current.imageBase64}`}
-                alt={current.content.altText || "Preview"}
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: isMobile ? 350 : 500,
-                  borderRadius: 12,
-                  border: `1px solid ${colors.border}`,
-                }}
-              />
-            </div>
-          )}
-
-          {/* Title & Description */}
-          <div style={{ marginBottom: 16 }}>
-            <p
-              style={{
-                fontSize: 12,
-                color: colors.muted,
-                margin: 0,
-                marginBottom: 4,
-                fontWeight: 600,
-              }}
-            >
-              Titre Pinterest
+            {/* Headline */}
+            <h1 className="section-title text-[2.75rem] md:text-[4rem] lg:text-[5rem] mb-7 leading-[1.05] text-balance">
+              Votre peau mérite
+              <br />
+              <span className="text-shimmer">l&apos;excellence</span>
+            </h1>
+
+            {/* Subheadline */}
+            <p className="text-text-muted text-lg md:text-xl leading-relaxed mb-12 max-w-xl">
+              Un espace confidentiel dédié à celles et ceux qui recherchent une
+              beauté intelligente. Soins du visage, hydradermabrasion,
+              massages relaxants et beauté du regard &mdash; chaque protocole
+              est pensé pour révéler l&apos;éclat naturel de votre peau.
             </p>
-            <p
-              style={{
-                fontSize: 16,
-                fontWeight: 600,
-                margin: 0,
-                color: colors.text,
-              }}
-            >
-              {current.content.title || "—"}
-            </p>
-          </div>
 
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <p
-                style={{
-                  fontSize: 12,
-                  color: colors.muted,
-                  margin: 0,
-                  fontWeight: 600,
-                }}
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-16">
+              <a
+                href="https://salonkee.be/salon/ginger?lang=fr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-gold pulse-glow"
               >
-                Description Pinterest
-              </p>
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: seoScore >= 60 ? "#22c55e" : seoScore >= 30 ? "#eab308" : "#ef4444",
-                  background: `${seoScore >= 60 ? "#22c55e" : seoScore >= 30 ? "#eab308" : "#ef4444"}22`,
-                  padding: "2px 8px",
-                  borderRadius: 4,
-                }}
-              >
-                SEO {seoScore}/100
-              </span>
+                <span>Réserver un soin</span>
+                <ArrowRight size={18} />
+              </a>
+              <Link href="/services" className="btn-outline">
+                <span>Découvrir nos soins</span>
+                <ArrowRight size={18} />
+              </Link>
             </div>
-            <p
-              style={{
-                fontSize: 14,
-                margin: 0,
-                color: colors.text,
-                lineHeight: 1.5,
-                whiteSpace: "pre-wrap",
-              }}
-            >
-              {current.content.description || "\u2014"}
-            </p>
-          </div>
 
-          {/* Platform tabs */}
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ display: "flex", gap: 0, borderBottom: `1px solid ${colors.border}`, marginBottom: 10 }}>
-              {(["pinterest", "linkedin", "instagram", "facebook"] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setMPlatformTab(p)}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    borderBottom: mPlatformTab === p ? `2px solid ${colors.accent}` : "2px solid transparent",
-                    color: mPlatformTab === p ? colors.accent : colors.muted,
-                    padding: "8px 14px",
-                    fontSize: 12,
-                    fontWeight: mPlatformTab === p ? 600 : 500,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  {p === "pinterest" ? "Pinterest" : p === "linkedin" ? "LinkedIn" : p === "instagram" ? "Instagram" : "Facebook"}
-                </button>
+            {/* Stats */}
+            <div className="flex gap-10 md:gap-14">
+              {heroStats.map((stat) => (
+                <div key={stat.label} className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cream to-champagne flex items-center justify-center border border-gold/20">
+                    <stat.icon size={16} className="text-gold-dark" />
+                  </div>
+                  <div>
+                    <p className="font-serif text-olive text-xl md:text-2xl font-bold leading-none">
+                      {stat.value}
+                    </p>
+                    <p className="text-text-dim text-[11px] mt-0.5 tracking-wider">{stat.label}</p>
+                  </div>
+                </div>
               ))}
             </div>
-            <div
-              style={{
-                background: colors.bg,
-                borderRadius: 8,
-                border: `1px solid ${colors.border}`,
-                padding: 12,
-                animation: "fadeIn 0.3s ease",
-              }}
-            >
-              <p
-                style={{
-                  fontSize: 13,
-                  margin: 0,
-                  color: colors.text,
-                  lineHeight: 1.5,
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                {mPlatformTab === "pinterest"
-                  ? current.content.description || "Non genere"
-                  : mPlatformTab === "linkedin"
-                    ? current.social?.linkedin || current.linkedin?.post || "Non genere"
-                    : mPlatformTab === "instagram"
-                      ? current.social?.instagram || "Non genere"
-                      : current.social?.facebook || "Non genere"}
-              </p>
-              <button
-                onClick={() =>
-                  mCopy(
-                    mPlatformTab === "pinterest"
-                      ? current.content.description || ""
-                      : mPlatformTab === "linkedin"
-                        ? current.social?.linkedin || current.linkedin?.post || ""
-                        : mPlatformTab === "instagram"
-                          ? current.social?.instagram || ""
-                          : current.social?.facebook || "",
-                    `modal-${mPlatformTab}`,
-                  )
-                }
-                style={{
-                  marginTop: 8,
-                  background: "transparent",
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: 6,
-                  padding: "5px 12px",
-                  fontSize: 11,
-                  cursor: "pointer",
-                  color: mCopied === `modal-${mPlatformTab}` ? "#22c55e" : colors.muted,
-                  fontFamily: "inherit",
-                }}
-              >
-                {mCopied === `modal-${mPlatformTab}` ? "Copie !" : "Copier"}
-              </button>
-            </div>
-          </div>
-
-          {/* Prompt info */}
-          {current.prompt && (
-            <div style={{ marginBottom: 16 }}>
-              <p
-                style={{
-                  fontSize: 12,
-                  color: colors.muted,
-                  margin: 0,
-                  marginBottom: 4,
-                  fontWeight: 600,
-                }}
-              >
-                Theme / Style
-              </p>
-              <p
-                style={{
-                  fontSize: 13,
-                  margin: 0,
-                  color: colors.muted,
-                }}
-              >
-                {current.prompt.theme}
-                {current.prompt.style &&
-                  ` — ${current.prompt.style}`}
-              </p>
-            </div>
-          )}
-
-          {/* Schedule info */}
-          <div style={{ marginBottom: 20 }}>
-            <p
-              style={{
-                fontSize: 12,
-                color: colors.muted,
-                margin: 0,
-                marginBottom: 4,
-                fontWeight: 600,
-              }}
-            >
-              Planifie pour
-            </p>
-            <p
-              style={{
-                fontSize: 13,
-                margin: 0,
-                color: colors.muted,
-              }}
-            >
-              {new Date(current.scheduledFor).toLocaleDateString(
-                "fr-FR",
-                {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                },
-              )}{" "}
-              a {padTime(current.scheduledHour)}:
-              {padTime(current.scheduledMinute)}
-            </p>
-          </div>
-
-          {/* Action buttons */}
-          <div
-            style={{
-              display: "flex",
-              gap: 10,
-              borderTop: `1px solid ${colors.border}`,
-              paddingTop: 16,
-              flexWrap: "wrap",
-            }}
-          >
-            {current.status === "pending" && (
-              <>
-                <button
-                  onClick={() => onApprove(current.id)}
-                  disabled={actionLoading}
-                  style={{
-                    background: actionLoading
-                      ? colors.border
-                      : "#14532d",
-                    color: actionLoading ? colors.muted : "#86efac",
-                    border: "1px solid #166534",
-                    borderRadius: 8,
-                    padding: "10px 24px",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: actionLoading
-                      ? "not-allowed"
-                      : "pointer",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  {actionLoading ? "..." : "Approuver"}
-                </button>
-                <button
-                  onClick={() => onReject(current.id)}
-                  disabled={actionLoading}
-                  style={{
-                    background: actionLoading
-                      ? colors.border
-                      : "#7f1d1d",
-                    color: actionLoading ? colors.muted : "#fca5a5",
-                    border: "1px solid #991b1b",
-                    borderRadius: 8,
-                    padding: "10px 24px",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: actionLoading
-                      ? "not-allowed"
-                      : "pointer",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  {actionLoading ? "..." : "Rejeter"}
-                </button>
-              </>
-            )}
-            {current.status === "approved" && (
-              <button
-                onClick={() => onPublish(current.id)}
-                disabled={actionLoading}
-                style={{
-                  background: actionLoading
-                    ? colors.border
-                    : "linear-gradient(135deg, #e63232, #ff4444)",
-                  color: actionLoading ? colors.muted : "#0a0a0f",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "10px 24px",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: actionLoading
-                    ? "not-allowed"
-                    : "pointer",
-                  fontFamily: "inherit",
-                }}
-              >
-                {actionLoading ? "Publication..." : "Publier maintenant"}
-              </button>
-            )}
-            {current.status === "rejected" && (
-              <button
-                onClick={() => onApprove(current.id)}
-                disabled={actionLoading}
-                style={{
-                  background: actionLoading
-                    ? colors.border
-                    : "#14532d",
-                  color: actionLoading ? colors.muted : "#86efac",
-                  border: "1px solid #166534",
-                  borderRadius: 8,
-                  padding: "10px 24px",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: actionLoading
-                    ? "not-allowed"
-                    : "pointer",
-                  fontFamily: "inherit",
-                }}
-              >
-                {actionLoading ? "..." : "Re-approuver"}
-              </button>
-            )}
-            {current.status === "published" && (
-              <span
-                style={{
-                  fontSize: 13,
-                  color: "#3b82f6",
-                  fontWeight: 600,
-                }}
-              >
-                Deja publie
-              </span>
-            )}
-            <button
-              onClick={onClose}
-              style={{
-                marginLeft: "auto",
-                background: "transparent",
-                color: colors.muted,
-                border: `1px solid ${colors.border}`,
-                borderRadius: 8,
-                padding: "10px 20px",
-                fontSize: 14,
-                fontWeight: 500,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              Fermer
-            </button>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
+      </section>
 
-// ---------------------------------------------------------------------------
-// Prompt Card
-// ---------------------------------------------------------------------------
+      {/* ═══════════════════════════════════════════════════════════════════
+          PROMISE — Brand statement
+          ═══════════════════════════════════════════════════════════════════ */}
+      <section className="relative py-20 md:py-24 bg-cream-light overflow-hidden">
+        <div className="absolute inset-0 bg-diamond opacity-30" />
+        <div className="gold-divider mb-16" />
+        <div className="relative max-w-4xl mx-auto px-6 text-center">
+          <div className="ornament-dots mb-8">
+            <Sparkles size={16} className="text-gold" />
+          </div>
+          <blockquote className="font-accent text-olive text-3xl md:text-5xl font-medium leading-snug mb-6 italic tracking-wide">
+            &ldquo;We don&apos;t conceal. We reveal.&rdquo;
+          </blockquote>
+          <div className="w-16 h-px bg-gradient-to-r from-transparent via-rose to-transparent mx-auto mb-6" />
+          <p className="text-text-muted max-w-2xl mx-auto leading-relaxed text-[15px]">
+            Chez Ginger, nous croyons en une beauté qui respecte, qui comprend
+            et qui sublime. Pas de masques, pas de promesses vides &mdash; juste
+            des soins d&apos;exception, des cosmétiques haut de gamme et un
+            savoir-faire passionné au service de votre peau.
+          </p>
+        </div>
+        <div className="gold-divider mt-16" />
+      </section>
 
-function PromptCard({
-  prompt,
-  deleting,
-  onDelete,
-  colors,
-  isMobile,
-}: {
-  prompt: SavedPrompt;
-  deleting: boolean;
-  onDelete: () => void;
-  colors: ThemeColors;
-  isMobile: boolean;
-}) {
-  const [confirmDel, setConfirmDel] = useState(false);
+      {/* ═══════════════════════════════════════════════════════════════════
+          EXPERTISES — Service categories
+          ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-24 md:py-32 relative">
+        <div className="absolute inset-0 bg-ambient opacity-50" />
+        <div className="relative max-w-7xl mx-auto px-6 lg:px-10">
+          <div className="text-center mb-20">
+            <div className="flex items-center justify-center gap-3 mb-5">
+              <span className="w-10 h-px bg-gradient-to-r from-transparent to-gold" />
+              <span className="section-label">Nos expertises</span>
+              <span className="w-10 h-px bg-gradient-to-r from-gold to-transparent" />
+            </div>
+            <h2 className="section-title text-3xl md:text-[3.25rem] mb-5 text-balance">
+              Des soins d&apos;exception pour
+              <br className="hidden md:block" />
+              chaque besoin de votre peau
+            </h2>
+            <p className="text-text-muted max-w-2xl mx-auto leading-relaxed">
+              De l&apos;hydradermabrasion avancée aux rituels de bien-être japonais,
+              découvrez une gamme complète de prestations esthétiques conçues
+              pour sublimer votre beauté naturelle.
+            </p>
+          </div>
 
-  return (
-    <div
-      style={{
-        background: colors.card,
-        borderRadius: 12,
-        border: `1px solid ${colors.border}`,
-        padding: isMobile ? "12px 14px" : "14px 18px",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: isMobile ? "flex-start" : "flex-start",
-          gap: 12,
-          flexDirection: isMobile ? "column" : "row",
-        }}
-      >
-        <div style={{ display: "flex", gap: 12, flex: 1, minWidth: 0, width: isMobile ? "100%" : undefined }}>
-          {/* Performance badge */}
-          <div
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: perfColors[prompt.performance] || colors.muted,
-              marginTop: 6,
-              flexShrink: 0,
-            }}
-            title={`Performance: ${perfLabels[prompt.performance] || prompt.performance}`}
-          />
-
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {/* Title row */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                marginBottom: 4,
-                flexWrap: "wrap",
-              }}
-            >
-              <span style={{ fontSize: 14, fontWeight: 600 }}>
-                {prompt.title || prompt.theme}
-              </span>
-              <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: perfColors[prompt.performance] || colors.muted,
-                  textTransform: "uppercase",
-                  padding: "1px 6px",
-                  borderRadius: 4,
-                  background: `${perfColors[prompt.performance] || colors.muted}22`,
-                }}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7 lg:gap-8">
+            {expertises.map((service) => (
+              <div
+                key={service.title}
+                className="group service-card p-8 relative"
               >
-                {perfLabels[prompt.performance] || prompt.performance}
-              </span>
+                {/* Decorative corner gradient */}
+                <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl ${service.accent} rounded-bl-[60px] opacity-0 group-hover:opacity-100 transition-opacity duration-700`} />
+
+                <div className="relative">
+                  <div className="icon-luxury mb-6">
+                    <service.icon size={24} className="text-gold-dark" />
+                  </div>
+
+                  <p className="text-gold-dark text-[10px] font-semibold tracking-[0.18em] uppercase mb-1.5">
+                    {service.subtitle}
+                  </p>
+                  <h3 className="font-serif text-olive text-xl font-bold mb-3">
+                    {service.title}
+                  </h3>
+                  <p className="text-text-muted text-sm leading-relaxed mb-6">
+                    {service.description}
+                  </p>
+
+                  <div className="flex items-center justify-between pt-5 border-t border-border-light/60">
+                    <span className="font-serif text-olive font-bold text-lg">{service.price}</span>
+                    <a
+                      href="https://salonkee.be/salon/ginger?lang=fr"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gold-dark text-[12px] font-semibold tracking-wider uppercase hover:text-olive transition-colors flex items-center gap-2 group/link"
+                    >
+                      Réserver
+                      <ArrowRight size={13} className="group-hover/link:translate-x-1 transition-transform duration-300" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-14">
+            <Link href="/services" className="btn-outline">
+              <span>Voir tous nos soins &amp; tarifs</span>
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          THE RITUAL — Step by step experience
+          ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-24 md:py-32 bg-cream-light relative overflow-hidden">
+        <div className="absolute inset-0 bg-silk opacity-30" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+
+        <div className="relative max-w-6xl mx-auto px-6 lg:px-10">
+          <div className="text-center mb-20">
+            <div className="flex items-center justify-center gap-3 mb-5">
+              <span className="w-10 h-px bg-gradient-to-r from-transparent to-gold" />
+              <span className="section-label">L&apos;expérience Ginger</span>
+              <span className="w-10 h-px bg-gradient-to-r from-gold to-transparent" />
             </div>
+            <h2 className="section-title text-3xl md:text-[3.25rem] mb-5 text-balance">
+              Votre rituel beauté,
+              <br className="hidden md:block" />
+              <span className="text-shimmer-rose">étape par étape</span>
+            </h2>
+          </div>
 
-            {/* Theme */}
-            <p
-              style={{
-                fontSize: 12,
-                color: colors.muted,
-                margin: "0 0 4px",
-              }}
-            >
-              Theme: {prompt.theme}
-              {prompt.style && ` — ${prompt.style}`}
-            </p>
-
-            {/* Image prompt (truncated) */}
-            <p
-              style={{
-                fontSize: 12,
-                color: colors.muted,
-                margin: "0 0 6px",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                maxWidth: isMobile ? "100%" : 600,
-                opacity: 0.6,
-              }}
-              title={prompt.imagePrompt}
-            >
-              {prompt.imagePrompt}
-            </p>
-
-            {/* Stats row */}
-            <div
-              style={{
-                display: "flex",
-                gap: 12,
-                fontSize: 11,
-                color: colors.muted,
-                flexWrap: "wrap",
-              }}
-            >
-              <span>Utilise {prompt.usedCount}x</span>
-              {prompt.impressions !== undefined && (
-                <span style={{ color: "#3b82f6" }}>
-                  {prompt.impressions} impressions
-                </span>
-              )}
-              {prompt.saves !== undefined && (
-                <span style={{ color: "#22c55e" }}>
-                  {prompt.saves} saves
-                </span>
-              )}
-              {prompt.clicks !== undefined && (
-                <span style={{ color: colors.accent }}>
-                  {prompt.clicks} clics
-                </span>
-              )}
-              <span>
-                Cree le{" "}
-                {new Date(prompt.createdAt).toLocaleDateString("fr-FR")}
-              </span>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+            {ritualSteps.map((r) => (
+              <div key={r.step} className="text-center group">
+                <div className="relative mx-auto mb-8">
+                  {/* Step number ring */}
+                  <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-cream to-champagne border-2 border-gold/20 flex items-center justify-center group-hover:border-gold/40 transition-all duration-500 group-hover:shadow-[0_0_30px_rgba(196,169,125,0.15)]">
+                    <r.icon size={32} className="text-gold-dark/70 group-hover:text-gold-dark transition-colors duration-400" />
+                  </div>
+                  <span className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-gradient-to-br from-gold to-gold-dark text-white text-xs font-bold flex items-center justify-center shadow-lg">
+                    {r.step}
+                  </span>
+                </div>
+                <h3 className="font-serif text-olive text-xl font-bold mb-3">{r.title}</h3>
+                <p className="text-text-muted text-sm leading-relaxed max-w-xs mx-auto">{r.description}</p>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Delete */}
-        <div
-          style={{
-            display: "flex",
-            gap: 4,
-            flexShrink: 0,
-          }}
-        >
-          {confirmDel ? (
-            <>
-              <SmallButton
-                onClick={() => {
-                  onDelete();
-                  setConfirmDel(false);
-                }}
-                disabled={deleting}
-                variant="danger"
-                colors={colors}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          SKIN CONCERNS — SEO rich section
+          ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-24 md:py-32 bg-linen-texture relative overflow-hidden">
+        <div className="bg-ambient absolute inset-0" />
+        <div className="relative max-w-7xl mx-auto px-6 lg:px-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-24 items-center">
+            {/* Left — image placeholder */}
+            <div className="img-placeholder rounded-[28px] aspect-[4/5] flex items-end p-8 border border-gold/12 relative group overflow-hidden">
+              {/* Floating decorative element */}
+              <div className="absolute top-8 right-8 w-20 h-20 border border-gold/15 rounded-full flex items-center justify-center">
+                <Sparkles size={20} className="text-gold/30 animate-twinkle" />
+              </div>
+              <div className="relative bg-white/92 backdrop-blur-md rounded-2xl p-7 w-full border border-gold/15 shadow-lg">
+                <p className="font-serif text-olive font-bold text-lg mb-1.5">
+                  Diagnostic personnalisé
+                </p>
+                <p className="text-text-muted text-sm leading-relaxed">
+                  Chaque soin commence par une analyse de votre type de peau
+                  et de vos préoccupations spécifiques.
+                </p>
+              </div>
+            </div>
+
+            {/* Right — content */}
+            <div>
+              <div className="flex items-center gap-3.5 mb-5">
+                <span className="w-10 h-px bg-gradient-to-r from-gold to-rose" />
+                <span className="section-label">Pour chaque préoccupation</span>
+              </div>
+              <h2 className="section-title text-3xl md:text-[2.75rem] mb-6 leading-tight">
+                Votre peau a des besoins uniques.
+                <br />
+                <span className="text-gradient-gold">Nous les comprenons.</span>
+              </h2>
+              <p className="text-text-muted leading-relaxed mb-10">
+                Que vous cherchiez à ralentir le vieillissement cutané, retrouver
+                un teint lumineux, atténuer les imperfections ou simplement offrir
+                à votre épiderme un moment de régénération intense &mdash; nos
+                protocoles de soins esthétiques sont conçus pour répondre
+                précisément à vos besoins.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 mb-10">
+                {skinConcerns.map((concern) => (
+                  <div
+                    key={concern}
+                    className="flex items-center gap-3 bg-white/85 backdrop-blur-sm rounded-xl px-4 py-3.5 border border-border-light/80 text-sm text-olive hover:border-gold/30 hover:bg-white transition-all duration-300"
+                  >
+                    <CheckCircle size={15} className="text-gold shrink-0" />
+                    {concern}
+                  </div>
+                ))}
+              </div>
+
+              <a
+                href="https://salonkee.be/salon/ginger?lang=fr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary"
               >
-                {deleting ? "..." : "Confirmer"}
-              </SmallButton>
-              <SmallButton
-                onClick={() => setConfirmDel(false)}
-                variant="ghost"
-                colors={colors}
-              >
-                Non
-              </SmallButton>
-            </>
-          ) : (
-            <SmallButton
-              onClick={() => setConfirmDel(true)}
-              variant="danger"
-              title="Supprimer"
-              colors={colors}
-            >
-              Supprimer
-            </SmallButton>
-          )}
+                <span>Réserver votre diagnostic</span>
+                <ArrowRight size={16} />
+              </a>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          WHY CHOOSE US
+          ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-24 md:py-32 relative">
+        <div className="absolute inset-0 bg-ambient opacity-30" />
+        <div className="relative max-w-7xl mx-auto px-6 lg:px-10">
+          <div className="text-center mb-20">
+            <div className="flex items-center justify-center gap-3 mb-5">
+              <span className="w-10 h-px bg-gradient-to-r from-transparent to-gold" />
+              <span className="section-label">Notre philosophie</span>
+              <span className="w-10 h-px bg-gradient-to-r from-gold to-transparent" />
+            </div>
+            <h2 className="section-title text-3xl md:text-[3.25rem] mb-4 text-balance">
+              Pourquoi choisir Ginger&nbsp;?
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
+            {whyUs.map((item) => (
+              <div
+                key={item.title}
+                className="group flex gap-6 p-8 rounded-2xl bg-white border border-border-light/80 service-card"
+              >
+                <div className="icon-luxury shrink-0">
+                  <item.icon size={24} className="text-gold-dark" />
+                </div>
+                <div>
+                  <h3 className="font-serif text-olive font-bold text-lg mb-2.5">
+                    {item.title}
+                  </h3>
+                  <p className="text-text-muted text-sm leading-relaxed">
+                    {item.text}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          TESTIMONIALS
+          ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-24 md:py-32 bg-cream-light relative overflow-hidden">
+        <div className="absolute inset-0 bg-silk opacity-20" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+
+        <div className="relative max-w-7xl mx-auto px-6 lg:px-10">
+          <div className="text-center mb-20">
+            <div className="flex items-center justify-center gap-3 mb-5">
+              <span className="w-10 h-px bg-gradient-to-r from-transparent to-gold" />
+              <span className="section-label">Avis vérifiés</span>
+              <span className="w-10 h-px bg-gradient-to-r from-gold to-transparent" />
+            </div>
+            <h2 className="section-title text-3xl md:text-[3.25rem] mb-3 text-balance">
+              4.9 <span className="text-gradient-gold">&#9733;</span> sur 5
+            </h2>
+            <p className="text-text-muted text-[15px]">
+              Elles ont confié leur peau à Ginger
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {testimonials.map((t) => (
+              <div
+                key={t.name}
+                className="testimonial-card p-7 flex flex-col"
+              >
+                <div className="flex gap-0.5 mb-2">
+                  {Array.from({ length: t.rating }).map((_, i) => (
+                    <Star key={i} size={13} className="fill-gold text-gold" />
+                  ))}
+                </div>
+                <p className="text-[10px] text-gold-dark font-semibold tracking-[0.15em] uppercase mb-4">
+                  {t.service}
+                </p>
+                <p className="text-text-muted text-sm leading-relaxed mb-5 italic flex-1">
+                  &ldquo;{t.text}&rdquo;
+                </p>
+                <div className="flex items-center gap-3 pt-4 border-t border-border-light/60">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cream to-champagne flex items-center justify-center border border-gold/20">
+                    <span className="font-serif text-olive text-xs font-bold">{t.name[0]}</span>
+                  </div>
+                  <span className="text-olive font-semibold text-sm">{t.name}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          FORMATIONS CTA
+          ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-24 md:py-28">
+        <div className="max-w-7xl mx-auto px-6 lg:px-10">
+          <div className="relative bg-gradient-to-br from-cream via-champagne to-linen rounded-[28px] border border-gold/15 p-10 md:p-16 flex flex-col md:flex-row items-center gap-12 overflow-hidden">
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-gold/8 to-transparent rounded-bl-full" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-rose/6 to-transparent rounded-tr-full" />
+            <div className="absolute inset-0 bg-diamond opacity-20" />
+
+            <div className="flex-1 relative">
+              <span className="section-label mb-4 block">Formations & Ateliers</span>
+              <h2 className="section-title text-2xl md:text-4xl mb-5">
+                Développez vos compétences beauté
+              </h2>
+              <p className="text-text-muted leading-relaxed mb-8">
+                Cours d&apos;auto-maquillage, formation professionnelle Korean Lashlift
+                ou atelier soin visage &mdash; apprenez les gestes experts dans un cadre
+                bienveillant et passionné. Des ateliers collaboratifs pensés pour
+                transmettre un savoir-faire d&apos;excellence.
+              </p>
+              <Link href="/formations" className="btn-primary">
+                <span>Découvrir les formations</span>
+                <ArrowRight size={16} />
+              </Link>
+            </div>
+            <div className="relative w-full md:w-80 h-64 img-placeholder rounded-2xl border border-gold/12 flex items-center justify-center shrink-0 overflow-hidden">
+              <div className="text-center relative z-10">
+                <div className="w-16 h-16 rounded-full bg-white/60 backdrop-blur-sm flex items-center justify-center mx-auto mb-3 border border-gold/20">
+                  <Award size={28} className="text-gold/50" />
+                </div>
+                <p className="font-serif text-olive/50 text-sm">Formation & partage</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          CTA FINAL
+          ═══════════════════════════════════════════════════════════════════ */}
+      <section className="relative py-28 md:py-36 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-charcoal via-anthracite to-brun-dark" />
+        <div className="absolute inset-0 bg-diamond opacity-5" />
+        <div className="absolute inset-0 bg-ambient opacity-10" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/25 to-transparent" />
+
+        {/* Decorative glows */}
+        <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[300px] h-[300px] bg-gold/[0.03] rounded-full blur-[80px]" />
+        <div className="absolute top-1/3 right-1/4 w-[200px] h-[200px] bg-rose/[0.03] rounded-full blur-[60px]" />
+
+        <div className="relative max-w-3xl mx-auto px-6 text-center">
+          <div className="ornament-dots mb-10 [&>*]:text-gold/40 [&::before]:bg-gradient-to-r [&::before]:from-transparent [&::before]:to-gold/25 [&::after]:bg-gradient-to-r [&::after]:from-gold/25 [&::after]:to-transparent">
+            <Sparkles size={16} className="text-gold/40" />
+          </div>
+
+          <h2 className="font-accent text-white text-4xl md:text-[3.5rem] font-light mb-7 leading-tight tracking-wide italic">
+            Prête à révéler
+            <br />
+            votre éclat naturel&nbsp;?
+          </h2>
+          <p className="text-white/50 text-lg mb-12 leading-relaxed max-w-lg mx-auto">
+            Réservez votre soin en quelques clics et offrez à votre peau
+            l&apos;attention qu&apos;elle mérite.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
+            <a
+              href="https://salonkee.be/salon/ginger?lang=fr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-gold pulse-glow"
+            >
+              <span>Réserver maintenant</span>
+              <ArrowRight size={16} />
+            </a>
+            <a
+              href="tel:+32499295849"
+              className="inline-flex items-center gap-2.5 text-white/60 hover:text-white border border-white/15 hover:border-white/30 px-8 py-4 rounded-pill transition-all duration-400 text-sm font-medium tracking-wider"
+            >
+              +32 499 29 58 49
+            </a>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
