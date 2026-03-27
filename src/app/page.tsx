@@ -688,7 +688,7 @@ export default function Dashboard() {
   // -------------------------------------------------------------------------
 
   async function handleRepublish(strategy: string) {
-    if (!republishPreviewId && ["best_pin", "new_text", "test_time", "season_version"].includes(strategy)) return;
+    if (!republishPreviewId && ["best_performer", "new_description", "different_time", "seasonal_refresh"].includes(strategy)) return;
     if (!republishBoardId && strategy === "other_board") return;
     setRepublishLoading(true);
     setRepublishResult(null);
@@ -2787,14 +2787,14 @@ export default function Dashboard() {
                 {/* Strategy 1: Meilleur Pin */}
                 <div
                   style={{
-                    background: republishStrategy === "best_pin" ? `${colors.accent}11` : colors.card,
+                    background: republishStrategy === "best_performer" ? `${colors.accent}11` : colors.card,
                     borderRadius: 12,
-                    border: `1px solid ${republishStrategy === "best_pin" ? colors.accent : colors.border}`,
+                    border: `1px solid ${republishStrategy === "best_performer" ? colors.accent : colors.border}`,
                     padding: isMobile ? "12px 14px" : "14px 16px",
                     cursor: "pointer",
                     transition: "all 0.15s",
                   }}
-                  onClick={() => setRepublishStrategy(republishStrategy === "best_pin" ? null : "best_pin")}
+                  onClick={() => setRepublishStrategy(republishStrategy === "best_performer" ? null : "best_performer")}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                     <span style={{ fontSize: 18 }}>{"\u2605"}</span>
@@ -2808,14 +2808,14 @@ export default function Dashboard() {
                 {/* Strategy 2: Nouveau Texte */}
                 <div
                   style={{
-                    background: republishStrategy === "new_text" ? `${colors.accent}11` : colors.card,
+                    background: republishStrategy === "new_description" ? `${colors.accent}11` : colors.card,
                     borderRadius: 12,
-                    border: `1px solid ${republishStrategy === "new_text" ? colors.accent : colors.border}`,
+                    border: `1px solid ${republishStrategy === "new_description" ? colors.accent : colors.border}`,
                     padding: isMobile ? "12px 14px" : "14px 16px",
                     cursor: "pointer",
                     transition: "all 0.15s",
                   }}
-                  onClick={() => setRepublishStrategy(republishStrategy === "new_text" ? null : "new_text")}
+                  onClick={() => setRepublishStrategy(republishStrategy === "new_description" ? null : "new_description")}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                     <span style={{ fontSize: 18 }}>{"\u21BB"}</span>
@@ -2850,14 +2850,14 @@ export default function Dashboard() {
                 {/* Strategy 4: Test Horaire */}
                 <div
                   style={{
-                    background: republishStrategy === "test_time" ? `${colors.accent}11` : colors.card,
+                    background: republishStrategy === "different_time" ? `${colors.accent}11` : colors.card,
                     borderRadius: 12,
-                    border: `1px solid ${republishStrategy === "test_time" ? colors.accent : colors.border}`,
+                    border: `1px solid ${republishStrategy === "different_time" ? colors.accent : colors.border}`,
                     padding: isMobile ? "12px 14px" : "14px 16px",
                     cursor: "pointer",
                     transition: "all 0.15s",
                   }}
-                  onClick={() => setRepublishStrategy(republishStrategy === "test_time" ? null : "test_time")}
+                  onClick={() => setRepublishStrategy(republishStrategy === "different_time" ? null : "different_time")}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                     <span style={{ fontSize: 18 }}>{"\u23F0"}</span>
@@ -2871,14 +2871,14 @@ export default function Dashboard() {
                 {/* Strategy 5: Version Saison */}
                 <div
                   style={{
-                    background: republishStrategy === "season_version" ? `${colors.accent}11` : colors.card,
+                    background: republishStrategy === "seasonal_refresh" ? `${colors.accent}11` : colors.card,
                     borderRadius: 12,
-                    border: `1px solid ${republishStrategy === "season_version" ? colors.accent : colors.border}`,
+                    border: `1px solid ${republishStrategy === "seasonal_refresh" ? colors.accent : colors.border}`,
                     padding: isMobile ? "12px 14px" : "14px 16px",
                     cursor: "pointer",
                     transition: "all 0.15s",
                   }}
-                  onClick={() => setRepublishStrategy(republishStrategy === "season_version" ? null : "season_version")}
+                  onClick={() => setRepublishStrategy(republishStrategy === "seasonal_refresh" ? null : "seasonal_refresh")}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                     <span style={{ fontSize: 18 }}>{"\uD83D\uDCC5"}</span>
@@ -2911,7 +2911,7 @@ export default function Dashboard() {
                     }}
                   >
                     {/* Preview selector (for strategies needing previewId) */}
-                    {["best_pin", "new_text", "test_time", "season_version"].includes(republishStrategy) && (
+                    {["best_performer", "new_description", "different_time", "seasonal_refresh"].includes(republishStrategy) && (
                       <div style={{ flex: 1, minWidth: isMobile ? "100%" : 200 }}>
                         <label style={{ fontSize: 12, color: colors.muted, fontWeight: 600, display: "block", marginBottom: 4 }}>
                           Preview source
@@ -2997,7 +2997,7 @@ export default function Dashboard() {
                       >
                         {republishLoading
                           ? "En cours..."
-                          : republishStrategy === "best_pin" || republishStrategy === "other_board"
+                          : republishStrategy === "best_performer" || republishStrategy === "other_board"
                             ? "Republier"
                             : "Generer"}
                       </button>
