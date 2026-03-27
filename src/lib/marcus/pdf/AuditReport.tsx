@@ -3,30 +3,32 @@ import { Document } from "@react-pdf/renderer";
 import type { AuditReportData } from "../types";
 import { generateNarrative } from "./narrative";
 import { CoverPage } from "./pages/CoverPage";
+import { IntroPage } from "./pages/IntroPage";
 import { CompanyPage } from "./pages/CompanyPage";
 import { SynthesePage } from "./pages/SynthesePage";
 import { PresencePage } from "./pages/PresencePage";
 import { ImpactPage } from "./pages/ImpactPage";
 import { ProjectionPage } from "./pages/ProjectionPage";
-import { CataloguePage } from "./pages/CataloguePage";
-import { CopilotsPage } from "./pages/CopilotsPage";
+import { SolutionPage } from "./pages/SolutionPage";
+import { AnnexePage } from "./pages/AnnexePage";
 
 interface AuditReportProps {
   data: AuditReportData;
 }
 
 /**
- * Rapport structure (8 pages) :
- *  1. Couverture (dark)
- *  2. Votre Entreprise (CompanyWeb)
- *  3. Synthese (score + audit technique + SEO)
- *  4. Presence Digitale (local + social + concurrents)
- *  5. Impact Operationnel (temps + leads)
- *  6. Projection & Recommandations (inaction + actions)
- *  7. Le Catalogue PrismaFlux (plateforme + integration)
- *  8. Vos Copilotes IA (Robin/Marcus/Lana/Pierre + CTA)
+ * Rapport PrismaFlux — Structure 9 pages :
+ *  1. Couverture (dark, branded)
+ *  2. Introduction (PrismaFlux + Robin + guide de lecture)
+ *  3. Votre Entreprise (CompanyWeb data)
+ *  4. Synthese Executive (scores + constats + narration)
+ *  5. Rayonnement Digital (local + social + concurrents + narration)
+ *  6. Impact Operationnel (storytelling + temps + leads)
+ *  7. Projection & Actions (graphique + 3 actions + stats marche)
+ *  8. La Solution PrismaFlux (copilotes + plateformes + CTA)
+ *  9. Annexe Technique (donnees brutes, checks, concurrents)
  */
-const TOTAL_PAGES = 8;
+const TOTAL_PAGES = 9;
 
 export function AuditReport({ data }: AuditReportProps) {
   const n = generateNarrative(data);
@@ -47,12 +49,26 @@ export function AuditReport({ data }: AuditReportProps) {
         carBrands={data.carBrands}
       />
 
+      <IntroPage
+        dealerName={data.dealerName}
+        introWelcome={n.introWelcome}
+        introWhatIsThis={n.introWhatIsThis}
+        introPrismafluxDesc={n.introPrismafluxDesc}
+        introRobinDesc={n.introRobinDesc}
+        introHowToRead={n.introHowToRead}
+        pageNumber={2}
+        totalPages={TOTAL_PAGES}
+      />
+
       <CompanyPage
         dealerName={data.dealerName}
         dealerCity={data.dealerCity}
         companyProfile={data.companyProfile}
         ownerName={data.ownerName}
-        pageNumber={2}
+        companyIntro={n.companyIntro}
+        technologyProfile={data.technologyProfile}
+        waybackProfile={data.waybackProfile}
+        pageNumber={3}
         totalPages={TOTAL_PAGES}
       />
 
@@ -60,12 +76,12 @@ export function AuditReport({ data }: AuditReportProps) {
         globalScore={data.globalScore}
         subScores={data.subScores}
         dealerName={data.dealerName}
-        technicalChecks={data.technicalChecks}
-        seoChecks={data.seoChecks}
         executiveSummary={n.executiveSummary}
-        technicalVerdict={n.technicalVerdict}
-        seoVerdict={n.seoVerdict}
-        pageNumber={3}
+        keyFindings={n.keyFindings}
+        syntheseTransition={n.syntheseTransition}
+        screenshotDesktop={data.screenshotDesktop}
+        indexedPages={data.indexedPages}
+        pageNumber={4}
         totalPages={TOTAL_PAGES}
       />
 
@@ -75,13 +91,15 @@ export function AuditReport({ data }: AuditReportProps) {
         missingKeywords={data.localPresence.missingKeywords}
         dealerCity={data.dealerCity}
         socialMedia={data.socialMedia}
-        competitors={data.competitors}
         googleProfile={data.googleProfile}
         dealerName={data.dealerName}
         localVerdict={n.localVerdict}
         socialVerdict={n.socialVerdict}
-        competitorVerdict={data.competitorInsights?.competitorNarrative ?? n.competitorVerdict}
-        pageNumber={4}
+        competitorVerdict={n.competitorVerdict}
+        presenceTransition={n.presenceTransition}
+        competitorInsights={data.competitorInsights}
+        mapDataUri={data.mapDataUri}
+        pageNumber={5}
         totalPages={TOTAL_PAGES}
       />
 
@@ -89,10 +107,11 @@ export function AuditReport({ data }: AuditReportProps) {
         timeLost={data.timeLost}
         leadsLost={data.leadsLost}
         dealerName={data.dealerName}
-        timeIntro={n.timeIntro}
+        dailyLifeStory={n.dailyLifeStory}
         timeVerdict={n.timeVerdict}
         leadsVerdict={n.leadsVerdict}
-        pageNumber={5}
+        impactTransition={n.impactTransition}
+        pageNumber={6}
         totalPages={TOTAL_PAGES}
       />
 
@@ -104,21 +123,27 @@ export function AuditReport({ data }: AuditReportProps) {
         actions={data.priorityActions}
         projectionIntro={n.projectionIntro}
         actionsIntro={n.actionsIntro}
-        pageNumber={6}
-        totalPages={TOTAL_PAGES}
-      />
-
-      <CataloguePage
-        carBrands={data.carBrands}
-        dealerName={data.dealerName}
         pageNumber={7}
         totalPages={TOTAL_PAGES}
       />
 
-      <CopilotsPage
+      <SolutionPage
         dealerName={data.dealerName}
         whyPrismaflux={n.whyPrismaflux}
+        solutionTransition={n.solutionTransition}
+        closingNote={n.closingNote}
         pageNumber={8}
+        totalPages={TOTAL_PAGES}
+      />
+
+      <AnnexePage
+        technicalChecks={data.technicalChecks}
+        seoChecks={data.seoChecks}
+        technicalExtras={data.technicalExtras}
+        competitors={data.competitors}
+        dealerName={data.dealerName}
+        googleProfile={data.googleProfile}
+        pageNumber={9}
         totalPages={TOTAL_PAGES}
       />
     </Document>

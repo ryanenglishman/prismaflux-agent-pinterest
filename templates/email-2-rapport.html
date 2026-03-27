@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Votre audit digital PrismaFlux</title>
+<style>
+  body { margin: 0; padding: 0; background: #f4f4f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  .container { max-width: 580px; margin: 0 auto; background: #ffffff; }
+  .header { background: #0f0f0f; padding: 24px 32px; text-align: center; }
+  .header-text { color: #e63946; font-size: 18px; font-weight: 700; letter-spacing: 1px; }
+  .header-sub { color: #999; font-size: 11px; margin-top: 2px; }
+  .body { padding: 32px; color: #333; line-height: 1.6; font-size: 15px; }
+  .body h1 { font-size: 20px; color: #0f0f0f; margin: 0 0 16px; }
+  .insight { background: #f8f9fa; border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .insight-title { font-size: 13px; font-weight: 600; color: #e63946; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .insight-text { font-size: 14px; color: #444; }
+  .pdf-box { background: #0f0f0f; border-radius: 8px; padding: 24px; text-align: center; margin: 24px 0; }
+  .pdf-icon { font-size: 40px; }
+  .pdf-name { color: #fff; font-size: 14px; font-weight: 600; margin-top: 8px; }
+  .pdf-size { color: #999; font-size: 11px; margin-top: 4px; }
+  .pdf-note { color: #e63946; font-size: 12px; margin-top: 8px; }
+  .cta { display: inline-block; background: #e63946; color: #ffffff; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 15px; }
+  .footer { background: #f8f9fa; padding: 20px 32px; text-align: center; font-size: 11px; color: #999; }
+  .footer a { color: #e63946; text-decoration: none; }
+  .unsub { font-size: 10px; color: #bbb; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="header-text">PRISMAFLUX</div>
+    <div class="header-sub">Auto</div>
+  </div>
+  <div class="body">
+    <h1>{{ownerName}}, voici votre audit digital</h1>
+    <p>Comme promis, vous trouverez en piece jointe le rapport d'audit digital complet de <strong>{{dealerName}}</strong>, genere par notre IA Marcus.</p>
+
+    <div class="pdf-box">
+      <div class="pdf-icon">📄</div>
+      <div class="pdf-name">audit-{{dealerSlug}}.pdf</div>
+      <div class="pdf-size">8 pages — {{pdfSize}}</div>
+      <div class="pdf-note">En piece jointe</div>
+    </div>
+
+    <p><strong>3 constats cles de votre audit :</strong></p>
+
+    <div class="insight">
+      <div class="insight-title">Performance</div>
+      <div class="insight-text">{{insight1}}</div>
+    </div>
+
+    <div class="insight">
+      <div class="insight-title">Temps perdu</div>
+      <div class="insight-text">{{insight2}}</div>
+    </div>
+
+    <div class="insight">
+      <div class="insight-title">Opportunite</div>
+      <div class="insight-text">{{insight3}}</div>
+    </div>
+
+    <p>Ce rapport identifie des leviers concrets pour gagner du temps et augmenter vos contacts clients. Si vous souhaitez en discuter, je suis disponible pour un echange de 15 minutes — sans engagement.</p>
+
+    <p style="text-align:center;">
+      <a href="{{calendlyLink}}" class="cta">Planifier un echange de 15 min</a>
+    </p>
+
+    <p>Cordialement,<br><strong>L'equipe PrismaFlux Auto</strong></p>
+  </div>
+  <div class="footer">
+    <p><a href="https://prismaflux.com">prismaflux.com</a> — L'IA au service des concessionnaires automobiles</p>
+    <p class="unsub"><a href="{{unsubLink}}">Se desinscrire</a></p>
+  </div>
+</div>
+</body>
+</html>

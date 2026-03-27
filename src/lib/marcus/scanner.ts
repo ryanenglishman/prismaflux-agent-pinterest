@@ -9,10 +9,17 @@ import type {
   PriorityAction,
   SocialMediaProfile,
   TechnicalExtras,
+  TechnologyProfileData,
   TimeLostBreakdown,
+  WaybackProfileData,
 } from "./types";
 import { scrapeCompetitors, analyzeCompetitors } from "./scrapers/google-maps";
 import { scrapeCompanyProfile } from "./scrapers/companyweb";
+import { detectTechnologies } from "./scrapers/wappalyzer";
+import { scrapeWaybackProfile } from "./scrapers/wayback";
+import { captureScreenshots } from "./scrapers/screenshot";
+import { scrapeIndexedPages } from "./scrapers/indexed-pages";
+import { generateStaticMap } from "./scrapers/static-map";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -120,7 +127,9 @@ const AVG_SALE_VALUE_EUR = 1800;
 export async function fetchPageSpeed(
   url: string,
 ): Promise<PageSpeedResult | null> {
-  const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=mobile&category=performance`;
+  const apiKey = process.env.GOOGLE_API_KEY;
+  const keyParam = apiKey ? `&key=${apiKey}` : "";
+  const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=mobile&category=performance${keyParam}`;
 
   try {
     const controller = new AbortController();
@@ -1068,6 +1077,44 @@ export async function scanWebsite(
   const leadsLost = buildLeadsLost(pageSpeed, vehicleCount);
   console.log(`[Marcus] Leads perdus: ~${leadsLost.leadsLostPerMonth}/mois (${leadsLost.revenueLostPerMonth} EUR/mois)`);
 
+  // --- Technology detection (Wappalyzer-style) ---
+  let technologyProfile: TechnologyProfileData | null = null;
+  if (crawl?.rawHtml) {
+    console.log(`\n[Marcus] === Detection des technologies (Wappalyzer) ===`);
+    const techResult = detectTechnologies(crawl.rawHtml);
+    technologyProfile = {
+      cms: techResult.cms,
+      analytics: techResult.analytics,
+      frameworks: techResult.frameworks,
+      ecommerce: techResult.ecommerce,
+      hosting: techResult.hosting,
+      cookieConsent: techResult.technologies.find(t => t.category === "Cookie Consent")?.name ?? null,
+      allTechnologies: techResult.technologies.map(t => ({ name: t.name, category: t.category })),
+      summary: techResult.summary,
+    };
+    console.log(`[Marcus] Technologies detectees: ${techResult.technologies.map(t => t.name).join(", ") || "aucune"}`);
+    console.log(`[Marcus] CMS: ${techResult.cms || "non detecte"}`);
+  }
+
+  // --- Wayback Machine / Archive.org ---
+  console.log(`\n[Marcus] === Scraping Archive.org (Wayback Machine) ===`);
+  let waybackProfile: WaybackProfileData | null = null;
+  const waybackResult = await scrapeWaybackProfile(dealerUrl);
+  if (waybackResult) {
+    waybackProfile = {
+      firstSeen: waybackResult.firstSeen,
+      domainAgeYears: waybackResult.domainAgeYears,
+      lastSeen: waybackResult.lastSeen,
+      totalSnapshots: waybackResult.totalSnapshots,
+      snapshotsByYear: waybackResult.snapshotsByYear,
+      avgSnapshotsPerYear: waybackResult.avgSnapshotsPerYear,
+      narrative: waybackResult.narrative,
+    };
+    console.log(`[Marcus] Premiere apparition: ${waybackResult.firstSeen ?? "inconnue"}`);
+    console.log(`[Marcus] Age du domaine: ${waybackResult.domainAgeYears ?? "?"} ans`);
+    console.log(`[Marcus] Snapshots totaux: ${waybackResult.totalSnapshots}`);
+  }
+
   // --- Google Maps competitor scraping ---
   console.log(`\n[Marcus] === Scraping concurrents Google Maps ===`);
   const gmapsResults = await scrapeCompetitors(dealerName, dealerCity, carBrands, 15);
@@ -1148,6 +1195,23 @@ export async function scanWebsite(
     }
   }
 
+  // --- Screenshot capture ---
+  console.log(`\n[Marcus] === Capture screenshot ===`);
+  const screenshots = await captureScreenshots(dealerUrl);
+  if (screenshots.desktop) console.log(`[Marcus] Screenshot desktop: OK`);
+  if (screenshots.mobile) console.log(`[Marcus] Screenshot mobile: OK`);
+
+  // --- Indexed pages ---
+  console.log(`\n[Marcus] === Pages indexees Google ===`);
+  const indexedResult = await scrapeIndexedPages(dealerUrl);
+  console.log(`[Marcus] Pages indexees: ${indexedResult.count ?? "non determine"}`);
+
+  // --- Static map ---
+  console.log(`\n[Marcus] === Carte geographique ===`);
+  const competitorNamesForMap = gmapsResults.slice(0, 5).map(r => r.name);
+  const mapResult = await generateStaticMap(dealerName, dealerCity, competitorNamesForMap);
+  console.log(`[Marcus] Carte: ${mapResult.dataUri ? "OK" : "echec"} (${mapResult.points.length} points)`);
+
   const report: AuditReportData = {
     dealerName,
     dealerUrl,
@@ -1174,6 +1238,13 @@ export async function scanWebsite(
     vehicleCount,
     companyProfile,
     competitorInsights,
+    technologyProfile,
+    waybackProfile,
+    screenshotDesktop: screenshots.desktop?.dataUri ?? null,
+    screenshotMobile: screenshots.mobile?.dataUri ?? null,
+    indexedPages: indexedResult.count,
+    indexedPagesNarrative: indexedResult.narrative,
+    mapDataUri: mapResult.dataUri,
   };
 
   console.log(`\n[Marcus] === Scan termine pour ${dealerName} ===`);

@@ -4,7 +4,8 @@ export const MOCK_AUDIT_DATA: AuditReportData = {
   dealerName: "Garage Dupont & Fils",
   dealerUrl: "https://www.garage-dupont.be",
   dealerCity: "Namur",
-  auditDate: "2026-03-25",
+  auditDate: "2026-03-26",
+  ownerName: "Jean-Pierre Dupont",
   globalScore: 42,
   subScores: {
     technique: 55,
@@ -12,139 +13,175 @@ export const MOCK_AUDIT_DATA: AuditReportData = {
     local: 38,
   },
   technicalChecks: [
-    {
-      label: "Certificat HTTPS",
-      status: "ok",
-      detail: "Votre site utilise un certificat SSL valide.",
-    },
-    {
-      label: "Vitesse de chargement",
-      status: "error",
-      detail: "Temps de chargement : 6.2 secondes (recommande : < 3s).",
-      recommendation:
-        "Compressez vos images, activez la mise en cache navigateur et utilisez un CDN.",
-    },
-    {
-      label: "Compatibilite mobile",
-      status: "warn",
-      detail:
-        "Certains elements ne s'adaptent pas correctement sur mobile (menu, formulaire de contact).",
-      recommendation:
-        "Adoptez un design responsive et testez sur differents appareils.",
-    },
-    {
-      label: "Erreurs 404",
-      status: "error",
-      detail: "12 pages retournent une erreur 404.",
-      recommendation:
-        "Corrigez ou redirigez les liens casses vers des pages existantes.",
-    },
-    {
-      label: "Compression des images",
-      status: "error",
-      detail:
-        "78% des images ne sont pas optimisees (format JPEG non compresse, pas de WebP).",
-      recommendation:
-        "Convertissez vos images en WebP et utilisez le lazy loading.",
-    },
+    { label: "Certificat HTTPS", status: "ok", detail: "Votre site utilise un certificat SSL valide." },
+    { label: "Vitesse de chargement", status: "error", detail: "Temps de chargement : 6.2 secondes (recommande : < 3s).", recommendation: "Compressez vos images, activez la mise en cache navigateur et utilisez un CDN." },
+    { label: "Compatibilite mobile", status: "warn", detail: "Certains elements ne s'adaptent pas correctement sur mobile.", recommendation: "Adoptez un design responsive et testez sur differents appareils." },
+    { label: "Attributs alt des images", status: "error", detail: "85% des images n'ont pas de texte alternatif.", recommendation: "Ajoutez des attributs alt descriptifs a chaque image." },
+    { label: "Bandeau cookies / RGPD", status: "error", detail: "Aucun bandeau de consentement cookies detecte.", recommendation: "Installer un bandeau RGPD (Axeptio, Tarteaucitron). Risque d'amende jusqu'a 4% du CA." },
+    { label: "Sitemap XML", status: "warn", detail: "Aucun sitemap.xml detecte.", recommendation: "Creer et soumettre un sitemap.xml dans la Google Search Console." },
+    { label: "Tracking & Analytics", status: "error", detail: "Aucun outil de tracking detecte (Google Analytics, GTM).", recommendation: "Installer Google Analytics 4 et Google Tag Manager." },
   ],
   seoChecks: [
-    {
-      label: "Balise Title",
-      status: "warn",
-      detail:
-        'Title actuel : "Garage Dupont" — trop court et non descriptif.',
-      recommendation:
-        'Utilisez un title de 50-60 caracteres avec vos mots-cles : "Garage Dupont Namur | Vente et reparation automobile".',
-    },
-    {
-      label: "Meta Description",
-      status: "error",
-      detail: "Aucune meta description definie sur la page d'accueil.",
-      recommendation:
-        "Ajoutez une meta description de 150-160 caracteres decrivant vos services principaux a Namur.",
-    },
-    {
-      label: "Balise H1",
-      status: "warn",
-      detail:
-        'H1 actuel : "Bienvenue" — ne contient aucun mot-cle pertinent.',
-      recommendation:
-        'Remplacez par un H1 descriptif : "Votre garage automobile de confiance a Namur".',
-    },
-    {
-      label: "Schema LocalBusiness",
-      status: "error",
-      detail:
-        "Aucun balisage Schema.org LocalBusiness detecte.",
-      recommendation:
-        "Ajoutez le schema LocalBusiness avec vos horaires, adresse, telephone et services.",
-    },
-    {
-      label: "Balises Alt images",
-      status: "error",
-      detail: "85% des images n'ont pas de texte alternatif.",
-      recommendation:
-        'Ajoutez des attributs alt descriptifs : "Volkswagen Golf occasion Namur" plutot que "IMG_2847".',
-    },
+    { label: "Balise title", status: "warn", detail: "Title : 14 caracteres (ideal : 30-65).", recommendation: "Rediger un title descriptif incluant votre activite et ville." },
+    { label: "Meta description", status: "error", detail: "Aucune meta description detectee.", recommendation: "Rediger une meta description entre 120 et 160 caracteres." },
+    { label: "Balise H1", status: "warn", detail: 'H1 : "Bienvenue" — ne contient aucun mot-cle pertinent.', recommendation: "Utiliser un H1 descriptif avec mots-cles locaux." },
+    { label: "Schema LocalBusiness", status: "error", detail: "Aucun balisage Schema.org LocalBusiness detecte.", recommendation: "Ajouter un balisage JSON-LD Schema.org type AutoDealer." },
+    { label: "Robots.txt", status: "warn", detail: "Aucun robots.txt detecte.", recommendation: "Creer un robots.txt pour guider les moteurs de recherche." },
   ],
   localPresence: {
     cityMentions: 2,
-    serviceMentions: ["vente vehicules", "reparation"],
+    serviceMentions: ["vente", "reparation"],
     missingKeywords: [
-      "reprise vehicule Namur",
-      "voiture occasion Namur",
-      "entretien auto Namur",
-      "garage automobile Namur",
-      "revision voiture Namur",
-      "carrosserie Namur",
+      "reprise vehicule Namur", "voiture occasion Namur", "entretien auto Namur",
+      "garage automobile Namur", "revision voiture Namur", "carrosserie Namur",
       "financement auto Namur",
     ],
   },
   competitors: [
-    {
-      name: "AutoCenter Namur",
-      googleRating: 4.6,
-      googleReviewCount: 312,
-      pageSpeedScore: 78,
-      hasLocalBusiness: true,
-    },
-    {
-      name: "CarPoint Wallonie",
-      googleRating: 4.3,
-      googleReviewCount: 187,
-      pageSpeedScore: 65,
-      hasLocalBusiness: true,
-    },
-    {
-      name: "Namur Auto Services",
-      googleRating: 4.1,
-      googleReviewCount: 94,
-      pageSpeedScore: 45,
-      hasLocalBusiness: false,
-    },
+    { name: "AutoCenter Namur", googleRating: 4.6, googleReviewCount: 312, pageSpeedScore: 78, hasLocalBusiness: true },
+    { name: "CarPoint Wallonie", googleRating: 4.3, googleReviewCount: 187, pageSpeedScore: 65, hasLocalBusiness: true },
+    { name: "Namur Auto Services", googleRating: 4.1, googleReviewCount: 94, pageSpeedScore: 45, hasLocalBusiness: false },
+    { name: "Garage Martin SPRL", googleRating: 4.4, googleReviewCount: 156, pageSpeedScore: null, hasLocalBusiness: true },
+    { name: "Auto Meuse Namur", googleRating: 3.9, googleReviewCount: 67, pageSpeedScore: null, hasLocalBusiness: false },
   ],
   priorityActions: [
     {
       title: "Optimisez votre fiche Google Business",
-      description:
-        "Vos concurrents ont en moyenne 198 avis Google. Votre fiche n'est pas completement remplie. Ajoutez des photos recentes, repondez aux avis existants et demandez un avis a chaque client satisfait.",
+      description: "Vos concurrents ont en moyenne 163 avis Google. Ajoutez des photos recentes, repondez aux avis existants et demandez un avis a chaque client satisfait. Impact mesurable en 4-6 semaines.",
       impact: "high",
       difficulty: "easy",
     },
     {
       title: "Corrigez les bases SEO de votre site",
-      description:
-        "Votre title, meta description et H1 ne contiennent aucun mot-cle local. En les corrigeant, vous pourriez apparaitre dans les resultats pour « garage Namur » et « voiture occasion Namur » sous 4-8 semaines.",
+      description: "Title, meta description et H1 ne contiennent aucun mot-cle local. En les corrigeant, vous pourriez apparaitre pour 'garage Namur' et 'voiture occasion Namur' sous 4-8 semaines.",
       impact: "high",
       difficulty: "medium",
     },
     {
-      title: "Ameliorez la vitesse de votre site",
-      description:
-        "Un temps de chargement de 6.2s fait fuir 53% des visiteurs mobiles. Compressez vos images (gain estime : -70% de poids) et activez la mise en cache pour descendre sous les 3 secondes.",
+      title: "Installez un bandeau RGPD et Google Analytics",
+      description: "Sans bandeau cookies, vous risquez une amende. Sans analytics, vous ne mesurez rien. Les deux se mettent en place en moins de 2 heures.",
       impact: "medium",
-      difficulty: "medium",
+      difficulty: "easy",
     },
   ],
+  // --- Enriched data ---
+  googleProfile: {
+    rating: 4.0,
+    reviewCount: 23,
+  },
+  socialMedia: [
+    { platform: "facebook", found: true, url: "https://www.facebook.com/garagedupont" },
+    { platform: "instagram", found: false, url: null },
+    { platform: "linkedin", found: false, url: null },
+  ],
+  carBrands: ["Volkswagen", "Renault", "Peugeot", "Citroen", "BMW", "Opel", "Audi"],
+  technicalExtras: {
+    hasCookieBanner: false,
+    hasSitemap: false,
+    hasRobotsTxt: false,
+    hasGoogleAnalytics: false,
+    hasGoogleTagManager: false,
+    sslValid: true,
+  },
+  timeLost: {
+    vehicleCount: 60,
+    tasks: [
+      { label: "Diffusion AutoScout24", description: "Remplir 50-60 champs par vehicule x 60 vehicules/mois", minutesPerMonth: 1500, automatable: true },
+      { label: "Diffusion multi-plateforme", description: "Dupliquer les annonces sur GoCar, LeBonCoin, site web, Facebook Marketplace", minutesPerMonth: 900, automatable: true },
+      { label: "Photos & retouches", description: "Shooting, retouche, redimensionnement, upload par vehicule", minutesPerMonth: 720, automatable: true },
+      { label: "Reseaux sociaux", description: "Creation de posts, stories, reels (4x/semaine minimum)", minutesPerMonth: 480, automatable: true },
+      { label: "Reponses aux avis Google", description: "Rediger des reponses personnalisees aux avis clients", minutesPerMonth: 150, automatable: true },
+      { label: "Emails & demandes clients", description: "Repondre aux demandes d'information, devis, disponibilite", minutesPerMonth: 1200, automatable: true },
+      { label: "Appels telephoniques", description: "Gestion des appels entrants, rappels, prises de RDV", minutesPerMonth: 900, automatable: false },
+      { label: "Mise a jour du site web", description: "Ajout/retrait de vehicules, mise a jour des prix et statuts", minutesPerMonth: 480, automatable: true },
+    ],
+    totalHoursPerMonth: 105,
+    totalCostPerMonth: 2625,
+    totalCostPerYear: 31500,
+  },
+  leadsLost: {
+    estimatedMonthlyVisitors: 1700,
+    estimatedBounceRate: 53,
+    visitorsLostPerMonth: 561,
+    leadsLostPerMonth: 14,
+    revenueLostPerMonth: 25200,
+    loadTimeSeconds: 6.2,
+  },
+  vehicleCount: 60,
+  // --- CompanyWeb data ---
+  companyProfile: {
+    companyNumber: "BE 0456.789.012",
+    legalForm: "SRL",
+    address: "Rue de Bruxelles 45, 5000 Namur",
+    creationDate: "12/03/2008",
+    revenue: 4200000,
+    grossMargin: 2100000,
+    employees: 8,
+    currentAdmins: [
+      { name: "Jean-Pierre Dupont", role: "Gerant", startDate: "12/03/2008" },
+    ],
+    historicalAdmins: [
+      { name: "Henri Dupont" },
+    ],
+    companyNarrative: "Garage Dupont & Fils est une SRL active depuis 2008, basee a Namur. Avec un chiffre d'affaires publie de 4,2M EUR et une marge brute de 2,1M EUR, l'entreprise affiche une solidite financiere correcte pour le secteur. L'equipe de 8 collaborateurs est dirigee par Jean-Pierre Dupont depuis la creation. L'anciennete de l'entreprise et sa continuite de direction sont des signes de stabilite.",
+  },
+  // --- Competitor insights ---
+  competitorInsights: {
+    avgRating: 4.26,
+    avgReviews: 163,
+    medianReviews: 156,
+    bestRated: { name: "AutoCenter Namur", rating: 4.6 },
+    mostReviewed: { name: "AutoCenter Namur", reviewCount: 312 },
+    prospectRatingRank: 5,
+    prospectReviewRank: 6,
+    totalAnalyzed: 5,
+    competitors: [
+      { name: "AutoCenter Namur", rating: 4.6, reviewCount: 312 },
+      { name: "CarPoint Wallonie", rating: 4.3, reviewCount: 187 },
+      { name: "Garage Martin SPRL", rating: 4.4, reviewCount: 156 },
+      { name: "Namur Auto Services", rating: 4.1, reviewCount: 94 },
+      { name: "Auto Meuse Namur", rating: 3.9, reviewCount: 67 },
+    ],
+    competitorNarrative: "L'analyse des 5 concurrents locaux a Namur revele un paysage concurrentiel actif. Avec une note moyenne de 4,26/5 et 163 avis en moyenne, le marche local prend sa reputation en ligne au serieux. AutoCenter Namur domine avec 4,6/5 et 312 avis — un ecart significatif avec les 23 avis de Garage Dupont & Fils. Votre note de 4,0/5 est correcte mais vous classe en 5eme position sur 6. Le volume d'avis (23 vs 163 en moyenne) est le levier le plus impactant a court terme : chaque nouveau avis rapproche de la moyenne du marche et ameliore le classement dans les resultats Google locaux.",
+  },
+  // --- Technology profile ---
+  technologyProfile: {
+    cms: "WordPress",
+    analytics: ["Google Analytics (UA)"],
+    frameworks: ["jQuery", "Bootstrap"],
+    ecommerce: null,
+    hosting: "OVH",
+    cookieConsent: null,
+    allTechnologies: [
+      { name: "WordPress", category: "CMS" },
+      { name: "Google Analytics (UA)", category: "Analytics" },
+      { name: "jQuery", category: "JS Library" },
+      { name: "Bootstrap", category: "CSS Framework" },
+      { name: "OVH", category: "Hosting" },
+    ],
+    summary: "Le site est construit avec WordPress. Les outils de tracking detectes sont : Google Analytics (UA). Technologies frontend : jQuery, Bootstrap. Aucun bandeau cookies detecte. Hebergement/CDN : OVH.",
+  },
+  // --- Wayback Machine ---
+  waybackProfile: {
+    firstSeen: "2009-04-12",
+    domainAgeYears: 17,
+    lastSeen: "2025-11-08",
+    totalSnapshots: 142,
+    snapshotsByYear: [
+      { year: 2022, count: 18 },
+      { year: 2023, count: 22 },
+      { year: 2024, count: 15 },
+      { year: 2025, count: 8 },
+      { year: 2026, count: 2 },
+    ],
+    avgSnapshotsPerYear: 8,
+    narrative: "Avec 17 ans de presence en ligne (depuis 2009), garage-dupont.be beneficie d'une anciennete remarquable. C'est un atout de credibilite aupres des moteurs de recherche et des clients — peu de concessions peuvent se prevaloir d'une telle continuite digitale. Le site montre une activite moderee avec environ 13 modifications par an. Des mises a jour plus frequentes amelioreraient le referencement.",
+  },
+
+  // New fields
+  screenshotDesktop: null,
+  screenshotMobile: null,
+  indexedPages: 23,
+  indexedPagesNarrative: "23 pages indexees par Google — une couverture correcte.",
+  mapDataUri: null,
 };

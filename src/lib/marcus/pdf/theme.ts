@@ -26,6 +26,10 @@ export const PDF_THEME = {
   red: "#DC2626",
   redDim: "#FEF2F2",
 
+  // Marcus AI (recommendation boxes)
+  marcusBlueDim: "#EFF6FF",
+  marcusBlue: "#3B82F6",
+
   // Borders
   border: "#E5E5E5",
   borderLight: "#F0F0F0",

@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import { scanWebsite } from "../src/lib/marcus/scanner";

@@ -94,6 +94,35 @@ export interface TechnicalExtras {
 }
 
 // ---------------------------------------------------------------------------
+// New: Technology profile (Wappalyzer-like detection)
+// ---------------------------------------------------------------------------
+
+export interface TechnologyProfileData {
+  cms: string | null;
+  analytics: string[];
+  frameworks: string[];
+  ecommerce: string | null;
+  hosting: string | null;
+  cookieConsent: string | null;
+  allTechnologies: { name: string; category: string }[];
+  summary: string;
+}
+
+// ---------------------------------------------------------------------------
+// New: Wayback Machine / Archive.org data
+// ---------------------------------------------------------------------------
+
+export interface WaybackProfileData {
+  firstSeen: string | null;
+  domainAgeYears: number | null;
+  lastSeen: string | null;
+  totalSnapshots: number;
+  snapshotsByYear: { year: number; count: number }[];
+  avgSnapshotsPerYear: number;
+  narrative: string;
+}
+
+// ---------------------------------------------------------------------------
 // Main report data
 // ---------------------------------------------------------------------------
 
@@ -135,6 +164,23 @@ export interface AuditReportData {
 
   // --- Competitor insights (Google Maps scraping) ---
   competitorInsights: CompetitorInsightsData | null;
+
+  // --- Technology profile (Wappalyzer-style) ---
+  technologyProfile: TechnologyProfileData | null;
+
+  // --- Wayback Machine / domain history ---
+  waybackProfile: WaybackProfileData | null;
+
+  // --- Screenshot ---
+  screenshotDesktop: string | null; // base64 data URI
+  screenshotMobile: string | null;  // base64 data URI
+
+  // --- Indexed pages ---
+  indexedPages: number | null;
+  indexedPagesNarrative: string;
+
+  // --- Static map ---
+  mapDataUri: string | null;
 }
 
 // ---------------------------------------------------------------------------

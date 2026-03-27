@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avez-vous consulte votre audit ?</title>
+<style>
+  body { margin: 0; padding: 0; background: #f4f4f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  .container { max-width: 580px; margin: 0 auto; background: #ffffff; }
+  .header { background: #0f0f0f; padding: 24px 32px; text-align: center; }
+  .header-text { color: #e63946; font-size: 18px; font-weight: 700; letter-spacing: 1px; }
+  .header-sub { color: #999; font-size: 11px; margin-top: 2px; }
+  .body { padding: 32px; color: #333; line-height: 1.6; font-size: 15px; }
+  .body h1 { font-size: 20px; color: #0f0f0f; margin: 0 0 16px; }
+  .quote-box { border-left: 3px solid #e63946; padding: 12px 16px; margin: 20px 0; background: #fafafa; font-style: italic; font-size: 14px; color: #555; }
+  .comparison { background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0; }
+  .comp-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+  .comp-row:last-child { border-bottom: none; }
+  .comp-label { font-size: 13px; color: #666; }
+  .comp-you { font-size: 14px; font-weight: 600; color: #e63946; }
+  .comp-avg { font-size: 14px; color: #28a745; }
+  .cta { display: inline-block; background: #e63946; color: #ffffff; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 15px; }
+  .ps { font-size: 13px; color: #888; margin-top: 24px; padding-top: 16px; border-top: 1px solid #eee; }
+  .footer { background: #f8f9fa; padding: 20px 32px; text-align: center; font-size: 11px; color: #999; }
+  .footer a { color: #e63946; text-decoration: none; }
+  .unsub { font-size: 10px; color: #bbb; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="header-text">PRISMAFLUX</div>
+    <div class="header-sub">Auto</div>
+  </div>
+  <div class="body">
+    <h1>{{ownerName}}, un dernier mot</h1>
+    <p>Je vous ai envoye l'audit digital de {{dealerName}} il y a quelques jours. J'espere que vous avez eu l'occasion d'y jeter un oeil.</p>
+
+    <div class="quote-box">
+      "Les concessionnaires qui passent de la gestion manuelle a l'automatisation IA recuperent en moyenne 80 heures par mois — l'equivalent d'un mi-temps supplementaire."
+    </div>
+
+    <p>Pour rappel, voici ce que nous avons observe chez vous :</p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f9fa;border-radius:8px;margin:20px 0;">
+      <tr>
+        <td style="padding:12px 16px;font-size:13px;color:#666;border-bottom:1px solid #eee;">Score digital</td>
+        <td style="padding:12px 16px;font-size:14px;font-weight:600;color:#e63946;text-align:right;border-bottom:1px solid #eee;">{{globalScore}}/100</td>
+        <td style="padding:12px 16px;font-size:14px;color:#28a745;text-align:right;border-bottom:1px solid #eee;">Moy. secteur : 52</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 16px;font-size:13px;color:#666;border-bottom:1px solid #eee;">Temps perdu</td>
+        <td style="padding:12px 16px;font-size:14px;font-weight:600;color:#e63946;text-align:right;border-bottom:1px solid #eee;">{{timeLostHours}}h/mois</td>
+        <td style="padding:12px 16px;font-size:14px;color:#28a745;text-align:right;border-bottom:1px solid #eee;">Avec IA : {{timeSaved}}h</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 16px;font-size:13px;color:#666;">Cout annuel</td>
+        <td style="padding:12px 16px;font-size:14px;font-weight:600;color:#e63946;text-align:right;">{{annualCost}} EUR</td>
+        <td style="padding:12px 16px;font-size:14px;color:#28a745;text-align:right;">Economie : {{savings}} EUR</td>
+      </tr>
+    </table>
+
+    <p>Un appel de 15 minutes suffit pour voir comment automatiser ces taches. Pas de commercial, juste un echange technique.</p>
+
+    <p style="text-align:center;">
+      <a href="{{calendlyLink}}" class="cta">Discutons 15 minutes</a>
+    </p>
+
+    <div class="ps">
+      <strong>P.S.</strong> — Si ce n'est pas le bon moment, pas de souci. Ce sera mon dernier message. Vous pouvez toujours revenir vers nous via <a href="https://prismaflux.com" style="color:#e63946;text-decoration:none;">prismaflux.com</a>.
+    </div>
+
+    <p>Cordialement,<br><strong>L'equipe PrismaFlux Auto</strong></p>
+  </div>
+  <div class="footer">
+    <p><a href="https://prismaflux.com">prismaflux.com</a> — L'IA au service des concessionnaires automobiles</p>
+    <p class="unsub"><a href="{{unsubLink}}">Se desinscrire</a></p>
+  </div>
+</div>
+</body>
+</html>
