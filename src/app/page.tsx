@@ -49,7 +49,9 @@ interface PipelineResult {
   linkedin?: { post: string };
   pin?: { pinId: string; createdAt: string };
   pins?: { pinId: string; createdAt: string }[];
+  social?: SocialExportData;
   imageBase64?: string;
+  trackedLink?: string;
   error?: string;
   durationMs: number;
   postName?: string;
