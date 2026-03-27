@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Clock,
   CheckCircle,
+  Star,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -147,17 +148,18 @@ export default function ServicesPage() {
     <>
       {/* ── Hero ───────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-cream-light via-bg to-ivory" />
-        <div className="absolute inset-0 bg-radial-warm" />
-        <div className="absolute bottom-0 right-0 w-80 h-80 bg-gold/6 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-b from-cream-light via-ivory to-bg" />
+        <div className="absolute inset-0 bg-ambient" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gold/5 rounded-full blur-[80px]" />
+        <div className="absolute top-20 left-20 w-64 h-64 bg-rose/4 rounded-full blur-[60px]" />
 
-        <div className="relative max-w-5xl mx-auto px-6 lg:px-10 py-20 md:py-28 text-center">
-          <div className="flex items-center justify-center gap-3 mb-5">
-            <span className="w-8 h-px bg-gold" />
+        <div className="relative max-w-5xl mx-auto px-6 lg:px-10 py-24 md:py-32 text-center">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <span className="w-10 h-px bg-gradient-to-r from-transparent to-gold" />
             <span className="section-label">Nos prestations esthétiques</span>
-            <span className="w-8 h-px bg-gold" />
+            <span className="w-10 h-px bg-gradient-to-r from-gold to-transparent" />
           </div>
-          <h1 className="section-title text-4xl md:text-6xl mb-6">
+          <h1 className="section-title text-4xl md:text-[4rem] mb-7">
             Soins &<br />
             <span className="text-shimmer">Tarifs</span>
           </h1>
@@ -171,16 +173,16 @@ export default function ServicesPage() {
       </section>
 
       {/* ── Quick Nav ──────────────────────────────────────────────────── */}
-      <section className="bg-cream-light py-6 border-y border-border-light sticky top-20 md:top-24 z-40">
-        <div className="max-w-6xl mx-auto px-6 overflow-x-auto">
-          <div className="flex gap-3 min-w-max">
+      <section className="bg-cream-light/80 backdrop-blur-sm py-5 border-y border-gold/10 sticky top-20 md:top-[88px] z-40">
+        <div className="max-w-6xl mx-auto px-6 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2.5 min-w-max">
             {categories.map((cat) => (
               <a
                 key={cat.title}
                 href={`#${cat.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-                className="flex items-center gap-2 bg-white/80 text-olive text-xs font-medium px-4 py-2 rounded-pill border border-border-light hover:border-gold/40 hover:bg-cream transition-all whitespace-nowrap"
+                className="flex items-center gap-2 bg-white/90 text-olive text-[11px] font-medium tracking-wider uppercase px-5 py-2.5 rounded-pill border border-border-light/80 hover:border-gold/40 hover:bg-cream hover:shadow-sm transition-all duration-300 whitespace-nowrap"
               >
-                <cat.icon size={14} className="text-gold-dark" />
+                <cat.icon size={13} className="text-gold-dark" />
                 {cat.title}
               </a>
             ))}
@@ -189,26 +191,27 @@ export default function ServicesPage() {
       </section>
 
       {/* ── Service Categories ─────────────────────────────────────────── */}
-      <section className="py-16 md:py-24">
-        <div className="max-w-5xl mx-auto px-6 lg:px-10 space-y-20">
+      <section className="py-20 md:py-28 relative">
+        <div className="absolute inset-0 bg-ambient opacity-30" />
+        <div className="relative max-w-5xl mx-auto px-6 lg:px-10 space-y-24">
           {categories.map((cat) => (
             <div
               key={cat.title}
               id={cat.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}
-              className="scroll-mt-40"
+              className="scroll-mt-44"
             >
               {/* Category header */}
-              <div className="flex flex-col md:flex-row md:items-start gap-4 mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cream to-sand flex items-center justify-center border border-gold/20 shrink-0">
+              <div className="flex flex-col md:flex-row md:items-start gap-5 mb-8">
+                <div className="icon-luxury shrink-0">
                   <cat.icon size={24} className="text-gold-dark" />
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-1">
+                  <div className="flex items-center gap-3 mb-1.5">
                     <h2 className="font-serif text-olive text-2xl md:text-3xl font-bold">
                       {cat.title}
                     </h2>
                     {cat.badge && (
-                      <span className="text-[10px] font-semibold tracking-wide uppercase bg-gold/15 text-gold-dark px-3 py-1 rounded-pill border border-gold/20">
+                      <span className="text-[9px] font-semibold tracking-[0.15em] uppercase bg-gradient-to-r from-gold/15 to-rose/10 text-gold-dark px-3.5 py-1 rounded-pill border border-gold/15">
                         {cat.badge}
                       </span>
                     )}
@@ -220,24 +223,24 @@ export default function ServicesPage() {
               </div>
 
               {/* Services list */}
-              <div className="bg-white rounded-xl border border-border-light overflow-hidden shadow-sm">
+              <div className="bg-white rounded-2xl border border-border-light/80 overflow-hidden shadow-[0_4px_24px_-8px_rgba(74,74,58,0.05)]">
                 {cat.services.map((s, i) => (
                   <div
                     key={s.name}
-                    className={`group px-6 md:px-8 py-5 ${
+                    className={`group px-7 md:px-9 py-6 ${
                       i < cat.services.length - 1
-                        ? "border-b border-border-light/60"
+                        ? "border-b border-border-light/50"
                         : ""
-                    } hover:bg-cream-light/40 transition-colors duration-300`}
+                    } hover:bg-gradient-to-r hover:from-cream-light/40 hover:to-transparent transition-all duration-400`}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <p className="text-olive font-semibold group-hover:text-gold-dark transition-colors">
+                        <p className="text-olive font-semibold group-hover:text-gold-dark transition-colors duration-300">
                           {s.name}
                         </p>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="flex items-center gap-1 text-text-dim text-xs">
-                            <Clock size={12} className="text-gold" />
+                        <div className="flex items-center gap-3 mt-1.5">
+                          <span className="flex items-center gap-1.5 text-text-dim text-xs">
+                            <Clock size={11} className="text-gold" />
                             {s.duration}
                           </span>
                           {s.detail && (
@@ -247,7 +250,7 @@ export default function ServicesPage() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-4 shrink-0">
+                      <div className="flex items-center gap-5 shrink-0">
                         <span className="font-serif text-olive font-bold text-lg whitespace-nowrap">
                           {s.price}
                         </span>
@@ -255,10 +258,10 @@ export default function ServicesPage() {
                           href="https://salonkee.be/salon/ginger?lang=fr"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="hidden sm:inline-flex items-center gap-1.5 text-gold-dark text-xs font-medium hover:text-olive transition-colors"
+                          className="hidden sm:inline-flex items-center gap-1.5 text-gold-dark text-[11px] font-semibold tracking-wider uppercase hover:text-olive transition-colors duration-300"
                         >
                           Réserver
-                          <ArrowRight size={12} />
+                          <ArrowRight size={11} />
                         </a>
                       </div>
                     </div>
@@ -271,12 +274,14 @@ export default function ServicesPage() {
       </section>
 
       {/* ── Formations teaser ──────────────────────────────────────────── */}
-      <section className="py-16 bg-cream-light">
-        <div className="max-w-5xl mx-auto px-6 lg:px-10 text-center">
-          <h2 className="section-title text-2xl md:text-4xl mb-4">
+      <section className="py-20 bg-cream-light relative overflow-hidden">
+        <div className="absolute inset-0 bg-silk opacity-20" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+        <div className="relative max-w-5xl mx-auto px-6 lg:px-10 text-center">
+          <h2 className="section-title text-2xl md:text-4xl mb-5">
             Vous êtes professionnelle de la beauté&nbsp;?
           </h2>
-          <p className="text-text-muted max-w-xl mx-auto mb-8 leading-relaxed">
+          <p className="text-text-muted max-w-xl mx-auto mb-10 leading-relaxed">
             Découvrez nos formations certifiantes en Korean Lashlift, soin visage
             et nos ateliers collaboratifs d&apos;auto-maquillage.
           </p>
@@ -288,13 +293,15 @@ export default function ServicesPage() {
       </section>
 
       {/* ── CTA ────────────────────────────────────────────────────────── */}
-      <section className="relative py-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-anthracite via-brun-dark to-olive-warm" />
+      <section className="relative py-24 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-charcoal via-anthracite to-brun-dark" />
+        <div className="absolute inset-0 bg-diamond opacity-5" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/25 to-transparent" />
         <div className="relative max-w-3xl mx-auto px-6 text-center">
-          <h2 className="font-serif text-white text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="font-accent text-white text-3xl md:text-[2.75rem] font-light mb-5 tracking-wide italic">
             Un soin vous intéresse&nbsp;?
           </h2>
-          <p className="text-white/60 mb-8 leading-relaxed">
+          <p className="text-white/50 mb-10 leading-relaxed">
             Réservation en ligne 24h/24, confirmation immédiate.
             Votre moment de beauté vous attend.
           </p>

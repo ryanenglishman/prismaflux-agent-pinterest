@@ -11,6 +11,7 @@ import {
   Award,
   CheckCircle,
   Star,
+  Heart,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -88,17 +89,17 @@ const atelierFeatures = [
   {
     icon: Users,
     title: "Petit comité",
-    text: "Des groupes réduits pour un accompagnement personnalisé et une attention maximale.",
+    text: "Des groupes réduits pour un accompagnement personnalisé et une attention maximale à chaque participante.",
   },
   {
     icon: Award,
     title: "Expertise terrain",
-    text: "Jessica partage son expérience quotidienne en institut, pas seulement de la théorie.",
+    text: "Jessica partage son expérience quotidienne en institut, pas seulement de la théorie mais un vrai savoir-faire.",
   },
   {
-    icon: Star,
+    icon: Heart,
     title: "Ambiance conviviale",
-    text: "Un cadre chaleureux et bienveillant où apprendre rime avec plaisir et partage.",
+    text: "Un cadre chaleureux et bienveillant où apprendre rime avec plaisir, partage et passion de la beauté.",
   },
 ];
 
@@ -107,17 +108,18 @@ export default function FormationsPage() {
     <>
       {/* ── Hero ───────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-cream-light via-bg to-ivory" />
-        <div className="absolute inset-0 bg-radial-warm" />
-        <div className="absolute top-20 right-20 w-80 h-80 bg-gold/8 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-b from-cream-light via-ivory to-bg" />
+        <div className="absolute inset-0 bg-ambient" />
+        <div className="absolute top-20 right-20 w-80 h-80 bg-gold/6 rounded-full blur-[80px]" />
+        <div className="absolute bottom-10 left-10 w-64 h-64 bg-rose/5 rounded-full blur-[60px]" />
 
-        <div className="relative max-w-5xl mx-auto px-6 lg:px-10 py-20 md:py-28 text-center">
-          <div className="flex items-center justify-center gap-3 mb-5">
-            <span className="w-8 h-px bg-gold" />
+        <div className="relative max-w-5xl mx-auto px-6 lg:px-10 py-24 md:py-32 text-center">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <span className="w-10 h-px bg-gradient-to-r from-transparent to-gold" />
             <span className="section-label">Apprendre & transmettre</span>
-            <span className="w-8 h-px bg-gold" />
+            <span className="w-10 h-px bg-gradient-to-r from-gold to-transparent" />
           </div>
-          <h1 className="section-title text-4xl md:text-6xl mb-6">
+          <h1 className="section-title text-4xl md:text-[4rem] mb-7">
             Formations &<br />
             <span className="text-shimmer">Ateliers Beauté</span>
           </h1>
@@ -130,16 +132,17 @@ export default function FormationsPage() {
       </section>
 
       {/* ── Atelier Features ───────────────────────────────────────────── */}
-      <section className="py-12 bg-cream-light">
-        <div className="max-w-5xl mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <section className="py-14 bg-cream-light relative overflow-hidden">
+        <div className="absolute inset-0 bg-diamond opacity-20" />
+        <div className="relative max-w-5xl mx-auto px-6 lg:px-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {atelierFeatures.map((f) => (
-              <div key={f.title} className="flex gap-4 items-start">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cream to-sand flex items-center justify-center shrink-0 border border-gold/20">
+              <div key={f.title} className="flex gap-5 items-start">
+                <div className="icon-luxury shrink-0">
                   <f.icon size={20} className="text-gold-dark" />
                 </div>
                 <div>
-                  <h3 className="font-serif text-olive font-bold mb-1">{f.title}</h3>
+                  <h3 className="font-serif text-olive font-bold mb-1.5">{f.title}</h3>
                   <p className="text-text-muted text-sm leading-relaxed">{f.text}</p>
                 </div>
               </div>
@@ -149,44 +152,46 @@ export default function FormationsPage() {
       </section>
 
       {/* ── Formations List ────────────────────────────────────────────── */}
-      <section className="py-20 md:py-28">
-        <div className="max-w-5xl mx-auto px-6 lg:px-10 space-y-12">
-          {formations.map((f, idx) => (
+      <section className="py-24 md:py-32 relative">
+        <div className="absolute inset-0 bg-ambient opacity-30" />
+        <div className="relative max-w-5xl mx-auto px-6 lg:px-10 space-y-14">
+          {formations.map((f) => (
             <div
               key={f.title}
-              className="bg-white rounded-2xl border border-border-light overflow-hidden card-lift"
+              className="bg-white rounded-[24px] border border-border-light/80 overflow-hidden service-card"
             >
               {/* Header band */}
-              <div className="bg-gradient-to-r from-cream via-cream-light to-linen px-8 py-6 border-b border-border-light">
-                <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cream-dark to-sand flex items-center justify-center border border-gold/30">
+              <div className="relative bg-gradient-to-r from-cream via-champagne to-linen px-8 md:px-10 py-7 border-b border-border-light/60 overflow-hidden">
+                <div className="absolute inset-0 bg-diamond opacity-15" />
+                <div className="relative flex flex-col md:flex-row md:items-center gap-5 md:gap-7">
+                  <div className="icon-luxury shrink-0">
                     <f.icon size={24} className="text-gold-dark" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-gold-dark text-[11px] font-semibold tracking-[0.15em] uppercase">
+                    <p className="text-gold-dark text-[10px] font-semibold tracking-[0.18em] uppercase">
                       {f.subtitle}
                     </p>
                     <h2 className="font-serif text-olive text-2xl font-bold">
                       {f.title}
                     </h2>
                   </div>
-                  <div className="flex gap-6 text-sm">
+                  <div className="flex gap-7 text-sm">
                     <div>
-                      <p className="text-text-dim text-xs">Durée</p>
+                      <p className="text-text-dim text-[10px] tracking-wider uppercase mb-0.5">Durée</p>
                       <p className="text-olive font-semibold flex items-center gap-1.5">
-                        <Clock size={14} className="text-gold" />
+                        <Clock size={13} className="text-gold" />
                         {f.duration}
                       </p>
                     </div>
                     <div>
-                      <p className="text-text-dim text-xs">Participants</p>
+                      <p className="text-text-dim text-[10px] tracking-wider uppercase mb-0.5">Groupe</p>
                       <p className="text-olive font-semibold flex items-center gap-1.5">
-                        <Users size={14} className="text-gold" />
+                        <Users size={13} className="text-gold" />
                         {f.participants}
                       </p>
                     </div>
                     <div>
-                      <p className="text-text-dim text-xs">Tarif</p>
+                      <p className="text-text-dim text-[10px] tracking-wider uppercase mb-0.5">Tarif</p>
                       <p className="font-serif text-olive font-bold text-xl">
                         {f.price}
                       </p>
@@ -196,23 +201,23 @@ export default function FormationsPage() {
               </div>
 
               {/* Body */}
-              <div className="p-8">
-                <p className="text-text-muted leading-relaxed mb-6">
+              <div className="p-8 md:p-10">
+                <p className="text-text-muted leading-relaxed mb-7">
                   {f.description}
                 </p>
 
-                <div className="mb-6">
-                  <h3 className="font-serif text-olive font-bold mb-3">
+                <div className="mb-7">
+                  <h3 className="font-serif text-olive font-bold mb-4 text-base">
                     Ce qui est inclus
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {f.includes.map((item) => (
                       <div
                         key={item}
-                        className="flex items-start gap-2.5 text-sm text-text-muted"
+                        className="flex items-start gap-3 text-sm text-text-muted"
                       >
                         <CheckCircle
-                          size={16}
+                          size={15}
                           className="text-gold shrink-0 mt-0.5"
                         />
                         {item}
@@ -221,7 +226,7 @@ export default function FormationsPage() {
                   </div>
                 </div>
 
-                <div className="bg-cream-light rounded-xl p-5 mb-6 border border-border-light">
+                <div className="bg-gradient-to-r from-cream-light to-champagne/30 rounded-xl p-6 mb-7 border border-border-light/60">
                   <p className="text-sm text-text-muted">
                     <span className="font-semibold text-olive">Idéal pour :</span>{" "}
                     {f.ideal}
@@ -239,12 +244,12 @@ export default function FormationsPage() {
                     <ArrowRight size={16} />
                   </a>
                   {f.payment && (
-                    <span className="text-xs text-text-dim bg-cream rounded-pill px-4 py-2 border border-gold/15">
-                      Paiement en ligne requis pour confirmer la réservation
+                    <span className="text-[11px] text-text-dim bg-cream/80 rounded-pill px-5 py-2.5 border border-gold/12 tracking-wide">
+                      Paiement en ligne requis pour confirmer
                     </span>
                   )}
                   {!f.payment && (
-                    <span className="text-xs text-text-dim bg-cream rounded-pill px-4 py-2 border border-gold/15">
+                    <span className="text-[11px] text-text-dim bg-cream/80 rounded-pill px-5 py-2.5 border border-gold/12 tracking-wide">
                       Réservation sans paiement en ligne
                     </span>
                   )}
@@ -256,21 +261,23 @@ export default function FormationsPage() {
       </section>
 
       {/* ── CTA ────────────────────────────────────────────────────────── */}
-      <section className="relative py-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-anthracite via-brun-dark to-olive-warm" />
+      <section className="relative py-24 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-charcoal via-anthracite to-brun-dark" />
+        <div className="absolute inset-0 bg-diamond opacity-5" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/25 to-transparent" />
         <div className="relative max-w-3xl mx-auto px-6 text-center">
-          <h2 className="font-serif text-white text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="font-accent text-white text-3xl md:text-[2.75rem] font-light mb-5 tracking-wide italic">
             Une question sur nos formations&nbsp;?
           </h2>
-          <p className="text-white/60 mb-8 leading-relaxed">
+          <p className="text-white/50 mb-10 leading-relaxed">
             Contactez-nous pour discuter de vos objectifs, planifier une date
             ou obtenir un programme détaillé.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
             <a href="mailto:info@thegingersecret.be" className="btn-gold">
               <span>info@thegingersecret.be</span>
             </a>
-            <Link href="/contact" className="inline-flex items-center gap-2 text-white/70 hover:text-white border border-white/20 hover:border-white/40 px-8 py-3.5 rounded-pill transition-all text-sm font-medium">
+            <Link href="/contact" className="inline-flex items-center gap-2.5 text-white/60 hover:text-white border border-white/15 hover:border-white/30 px-8 py-4 rounded-pill transition-all duration-400 text-sm font-medium tracking-wider">
               Nous contacter
             </Link>
           </div>

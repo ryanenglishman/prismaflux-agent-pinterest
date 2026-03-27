@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import {
   MapPin,
   Phone,
@@ -7,6 +8,7 @@ import {
   ExternalLink,
   ArrowRight,
   CheckCircle,
+  Sparkles,
 } from "lucide-react";
 
 function FacebookIcon({ size = 16 }: { size?: number }) {
@@ -69,16 +71,17 @@ export default function ContactPage() {
     <>
       {/* ── Hero ───────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-cream-light via-bg to-ivory" />
-        <div className="absolute inset-0 bg-radial-warm" />
+        <div className="absolute inset-0 bg-gradient-to-b from-cream-light via-ivory to-bg" />
+        <div className="absolute inset-0 bg-ambient" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-rose/5 rounded-full blur-[80px]" />
 
-        <div className="relative max-w-5xl mx-auto px-6 lg:px-10 py-20 md:py-28 text-center">
-          <div className="flex items-center justify-center gap-3 mb-5">
-            <span className="w-8 h-px bg-gold" />
+        <div className="relative max-w-5xl mx-auto px-6 lg:px-10 py-24 md:py-32 text-center">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <span className="w-10 h-px bg-gradient-to-r from-transparent to-gold" />
             <span className="section-label">Nous retrouver</span>
-            <span className="w-8 h-px bg-gold" />
+            <span className="w-10 h-px bg-gradient-to-r from-gold to-transparent" />
           </div>
-          <h1 className="section-title text-4xl md:text-6xl mb-6">
+          <h1 className="section-title text-4xl md:text-[4rem] mb-7">
             Contact &<br />
             <span className="text-shimmer">Accès</span>
           </h1>
@@ -90,19 +93,20 @@ export default function ContactPage() {
       </section>
 
       {/* ── Content ────────────────────────────────────────────────────── */}
-      <section className="py-16 md:py-24">
-        <div className="max-w-6xl mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
+      <section className="py-20 md:py-28 relative">
+        <div className="absolute inset-0 bg-ambient opacity-20" />
+        <div className="relative max-w-6xl mx-auto px-6 lg:px-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20">
 
             {/* Left — Contact Info */}
             <div className="space-y-10">
               {/* Address */}
-              <div className="flex gap-5">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cream to-sand flex items-center justify-center shrink-0 border border-gold/20">
+              <div className="flex gap-6">
+                <div className="icon-luxury shrink-0">
                   <MapPin size={20} className="text-gold-dark" />
                 </div>
                 <div>
-                  <h2 className="font-serif text-olive text-lg font-bold mb-1">
+                  <h2 className="font-serif text-olive text-lg font-bold mb-1.5">
                     Adresse
                   </h2>
                   <p className="text-text-muted leading-relaxed">
@@ -113,17 +117,17 @@ export default function ContactPage() {
               </div>
 
               {/* Phone */}
-              <div className="flex gap-5">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cream to-sand flex items-center justify-center shrink-0 border border-gold/20">
+              <div className="flex gap-6">
+                <div className="icon-luxury shrink-0">
                   <Phone size={20} className="text-gold-dark" />
                 </div>
                 <div>
-                  <h2 className="font-serif text-olive text-lg font-bold mb-1">
+                  <h2 className="font-serif text-olive text-lg font-bold mb-1.5">
                     Téléphone
                   </h2>
                   <a
                     href="tel:+32499295849"
-                    className="text-text-muted hover:text-olive transition-colors text-lg"
+                    className="text-text-muted hover:text-olive transition-colors duration-300 text-lg"
                   >
                     +32 499 29 58 49
                   </a>
@@ -131,17 +135,17 @@ export default function ContactPage() {
               </div>
 
               {/* Email */}
-              <div className="flex gap-5">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cream to-sand flex items-center justify-center shrink-0 border border-gold/20">
+              <div className="flex gap-6">
+                <div className="icon-luxury shrink-0">
                   <Mail size={20} className="text-gold-dark" />
                 </div>
                 <div>
-                  <h2 className="font-serif text-olive text-lg font-bold mb-1">
+                  <h2 className="font-serif text-olive text-lg font-bold mb-1.5">
                     Email
                   </h2>
                   <a
                     href="mailto:info@thegingersecret.be"
-                    className="text-text-muted hover:text-olive transition-colors"
+                    className="text-text-muted hover:text-olive transition-colors duration-300"
                   >
                     info@thegingersecret.be
                   </a>
@@ -149,22 +153,24 @@ export default function ContactPage() {
               </div>
 
               {/* Hours */}
-              <div className="flex gap-5">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cream to-sand flex items-center justify-center shrink-0 border border-gold/20">
+              <div className="flex gap-6">
+                <div className="icon-luxury shrink-0">
                   <Clock size={20} className="text-gold-dark" />
                 </div>
                 <div className="flex-1">
-                  <h2 className="font-serif text-olive text-lg font-bold mb-3">
+                  <h2 className="font-serif text-olive text-lg font-bold mb-4">
                     Horaires d&apos;ouverture
                   </h2>
-                  <div className="space-y-1">
-                    {hours.map((h) => (
+                  <div className="bg-white rounded-xl border border-border-light/80 overflow-hidden">
+                    {hours.map((h, i) => (
                       <div
                         key={h.day}
-                        className="flex justify-between text-sm py-1.5 px-4 rounded-lg text-text-muted odd:bg-cream-light/50"
+                        className={`flex justify-between text-sm py-3 px-5 text-text-muted ${
+                          i % 2 === 0 ? "bg-cream-light/30" : ""
+                        } ${i < hours.length - 1 ? "border-b border-border-light/40" : ""}`}
                       >
-                        <span className="font-medium">{h.day}</span>
-                        <span>{h.time}</span>
+                        <span className="font-medium text-olive">{h.day}</span>
+                        <span className={h.time === "Fermé" ? "text-rose" : ""}>{h.time}</span>
                       </div>
                     ))}
                   </div>
@@ -173,7 +179,7 @@ export default function ContactPage() {
 
               {/* Socials */}
               <div>
-                <h2 className="font-serif text-olive text-lg font-bold mb-4">
+                <h2 className="font-serif text-olive text-lg font-bold mb-5">
                   Suivez-nous
                 </h2>
                 <div className="flex flex-wrap gap-3">
@@ -183,9 +189,9 @@ export default function ContactPage() {
                       href={s.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2.5 bg-white text-olive px-5 py-3 rounded-xl border border-border-light hover:border-gold/40 hover:bg-cream-light transition-all text-sm font-medium card-lift"
+                      className="group flex items-center gap-3 bg-white text-olive px-5 py-3.5 rounded-xl border border-border-light/80 hover:border-gold/30 hover:bg-cream-light transition-all duration-300 text-sm font-medium service-card"
                     >
-                      <s.icon size={16} />
+                      <s.icon size={15} />
                       <span>{s.label}</span>
                       <span className="text-text-dim text-xs">{s.handle}</span>
                     </a>
@@ -197,7 +203,7 @@ export default function ContactPage() {
             {/* Right — Map + Booking + Info */}
             <div className="space-y-8">
               {/* Map */}
-              <div className="rounded-2xl overflow-hidden border border-border-light shadow-sm h-80">
+              <div className="rounded-[20px] overflow-hidden border border-border-light/80 shadow-[0_4px_24px_-8px_rgba(74,74,58,0.06)] h-80">
                 <iframe
                   title="Localisation The Ginger Secret — Institut de beauté Seraing"
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2533.5!2d5.5!3d50.6!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zPlace+de+la+Bergerie+22%2C+4100+Seraing!5e0!3m2!1sfr!2sbe!4v1"
@@ -210,46 +216,52 @@ export default function ContactPage() {
               </div>
 
               {/* Booking card */}
-              <div className="bg-gradient-to-br from-cream via-cream-light to-linen rounded-2xl border border-gold/20 p-8 md:p-10 card-glow text-center">
-                <h3 className="font-serif text-olive text-2xl font-bold mb-3">
-                  Réservation en ligne
-                </h3>
-                <p className="text-text-muted text-sm mb-6 leading-relaxed">
-                  Réservez votre soin 24h/24 sur nos plateformes de réservation.
-                  Confirmation immédiate, rappel automatique et gestion flexible
-                  de vos rendez-vous.
-                </p>
-                <a
-                  href="https://salonkee.be/salon/ginger?lang=fr"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-primary justify-center w-full sm:w-auto"
-                >
-                  <span>Réserver sur Salonkee</span>
-                  <ExternalLink size={16} />
-                </a>
-                <p className="text-xs text-text-dim mt-4">
-                  Également disponible sur{" "}
+              <div className="relative bg-gradient-to-br from-cream via-champagne to-linen rounded-[20px] border border-gold/15 p-9 md:p-10 text-center overflow-hidden">
+                <div className="absolute inset-0 bg-diamond opacity-20" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-gold/8 to-transparent rounded-bl-full" />
+                <div className="relative">
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gold/20 to-rose/15 flex items-center justify-center mx-auto mb-5 border border-gold/20">
+                    <Sparkles size={22} className="text-gold-dark" />
+                  </div>
+                  <h3 className="font-serif text-olive text-2xl font-bold mb-3">
+                    Réservation en ligne
+                  </h3>
+                  <p className="text-text-muted text-sm mb-7 leading-relaxed max-w-sm mx-auto">
+                    Réservez votre soin 24h/24 sur nos plateformes de réservation.
+                    Confirmation immédiate et gestion flexible de vos rendez-vous.
+                  </p>
                   <a
-                    href="https://www.planity.com/fr-BE/the-ginger-secret-4100-seraing"
+                    href="https://salonkee.be/salon/ginger?lang=fr"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gold-dark underline hover:text-olive transition-colors"
+                    className="btn-primary justify-center w-full sm:w-auto"
                   >
-                    Planity
+                    <span>Réserver sur Salonkee</span>
+                    <ExternalLink size={15} />
                   </a>
-                </p>
+                  <p className="text-xs text-text-dim mt-5">
+                    Également disponible sur{" "}
+                    <a
+                      href="https://www.planity.com/fr-BE/the-ginger-secret-4100-seraing"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gold-dark underline hover:text-olive transition-colors duration-300"
+                    >
+                      Planity
+                    </a>
+                  </p>
+                </div>
               </div>
 
               {/* Practical info */}
-              <div className="bg-white rounded-xl border border-border-light p-6">
-                <h3 className="font-serif text-olive font-bold mb-4">
+              <div className="bg-white rounded-[20px] border border-border-light/80 p-7">
+                <h3 className="font-serif text-olive font-bold mb-5">
                   Informations pratiques
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-3.5">
                   {practicalInfo.map((info) => (
-                    <div key={info} className="flex items-start gap-2.5 text-sm text-text-muted">
-                      <CheckCircle size={16} className="text-gold shrink-0 mt-0.5" />
+                    <div key={info} className="flex items-start gap-3 text-sm text-text-muted">
+                      <CheckCircle size={15} className="text-gold shrink-0 mt-0.5" />
                       {info}
                     </div>
                   ))}
@@ -257,7 +269,7 @@ export default function ContactPage() {
               </div>
 
               {/* TVA */}
-              <p className="text-xs text-text-dim text-center">
+              <p className="text-xs text-text-dim text-center tracking-wider">
                 The Ginger Secret &mdash; TVA&nbsp;: BE&nbsp;1012.394.542
               </p>
             </div>

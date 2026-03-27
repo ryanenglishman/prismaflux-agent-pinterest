@@ -13,14 +13,17 @@ import {
   Leaf,
   Award,
   CheckCircle,
+  Quote,
+  Flower2,
+  Sun,
 } from "lucide-react";
 
 /* ── Data ──────────────────────────────────────────────────────────────── */
 
 const heroStats = [
-  { value: "4.9/5", label: "Avis clients" },
-  { value: "30+", label: "Soins proposés" },
-  { value: "100%", label: "Recommandation" },
+  { value: "4.9/5", label: "Avis clients", icon: Star },
+  { value: "30+", label: "Soins proposés", icon: Sparkles },
+  { value: "100%", label: "Recommandation", icon: Heart },
 ];
 
 const expertises = [
@@ -31,6 +34,7 @@ const expertises = [
     description:
       "Notre soin phare allie aspiration, exfoliation et infusion de sérums actifs pour une peau nettoyée en profondeur, décongestionée et intensément hydratée. Un éclat visible dès la première séance.",
     price: "dès 85 €",
+    accent: "from-blue-100/40 to-cyan-50/40",
   },
   {
     icon: Eye,
@@ -39,6 +43,7 @@ const expertises = [
     description:
       "Rehaussement de cils classique ou Korean Lashlift, restructuration et teinture des sourcils. Des techniques douces et précises pour un regard ouvert, intense et naturellement sublimé.",
     price: "dès 50 €",
+    accent: "from-purple-50/40 to-pink-50/40",
   },
   {
     icon: Sparkles,
@@ -47,6 +52,7 @@ const expertises = [
     description:
       "Du soin traditionnel au lifting japonais Kobido, chaque protocole est adapté à votre type de peau. Nettoyage, exfoliation, masque, sérum — votre peau retrouve son équilibre naturel.",
     price: "dès 35 €",
+    accent: "from-amber-50/40 to-yellow-50/40",
   },
   {
     icon: Hand,
@@ -55,6 +61,7 @@ const expertises = [
     description:
       "Massage relaxant du corps complet, drainage des jambes, massage crânien ou énergétique. Un moment de détente profonde où tensions et stress se dissolvent.",
     price: "dès 50 €",
+    accent: "from-emerald-50/40 to-teal-50/40",
   },
   {
     icon: Gem,
@@ -63,6 +70,7 @@ const expertises = [
     description:
       "Sublimez votre beauté naturelle pour vos événements les plus précieux. Maquillage mariée, soirée ou essai complet — un résultat lumineux et longue tenue.",
     price: "dès 50 €",
+    accent: "from-rose-50/40 to-pink-50/40",
   },
   {
     icon: Award,
@@ -71,6 +79,31 @@ const expertises = [
     description:
       "Cours d'auto-maquillage, formation Korean Lashlift ou soin visage. Développez vos compétences beauté aux côtés d'une professionnelle passionnée et expérimentée.",
     price: "dès 120 €",
+    accent: "from-orange-50/40 to-amber-50/40",
+  },
+];
+
+const ritualSteps = [
+  {
+    step: "01",
+    title: "Accueil & Diagnostic",
+    description:
+      "Un moment d'échange pour comprendre votre peau, vos attentes et définir ensemble le protocole idéal. Analyse de votre type de peau, de vos préoccupations cutanées et de votre routine actuelle.",
+    icon: Flower2,
+  },
+  {
+    step: "02",
+    title: "Rituel de Soin",
+    description:
+      "Installation dans notre cabine confidentielle, musique apaisante, lumière tamisée. Chaque geste est réalisé avec précision et douceur — nettoyage, exfoliation, soin ciblé, massage.",
+    icon: Sparkles,
+  },
+  {
+    step: "03",
+    title: "Résultat & Conseils",
+    description:
+      "Votre peau est transformée, votre teint est lumineux. Jessica vous accompagne avec des conseils personnalisés pour prolonger les bienfaits du soin à la maison.",
+    icon: Sun,
   },
 ];
 
@@ -82,8 +115,8 @@ const whyUs = [
   },
   {
     icon: Leaf,
-    title: "Produits sélectionnés avec soin",
-    text: "Des cosmétiques professionnels haute performance, choisis pour leur efficacité et leur respect de la peau. Aucun compromis entre résultat et douceur.",
+    title: "Cosmétiques haut de gamme",
+    text: "Des produits professionnels haute performance, choisis pour leur efficacité et leur respect de la peau. Aucun compromis entre résultat et douceur.",
   },
   {
     icon: Shield,
@@ -141,36 +174,52 @@ export default function HomePage() {
   return (
     <>
       {/* ═══════════════════════════════════════════════════════════════════
-          HERO — Immersive entry
+          HERO — Immersive luxury entry
           ═══════════════════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden min-h-[90vh] flex items-center">
-        {/* Layered background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-cream-light via-bg to-ivory" />
-        <div className="absolute inset-0 bg-radial-warm" />
-        <div className="absolute top-20 right-0 w-[500px] h-[500px] bg-gradient-to-br from-gold/10 to-peach/10 rounded-full blur-3xl animate-breathe" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[400px] bg-gradient-to-tr from-peach-light/10 to-gold/5 rounded-full blur-3xl" />
+      <section className="relative overflow-hidden min-h-[92vh] flex items-center">
+        {/* Layered backgrounds */}
+        <div className="absolute inset-0 bg-gradient-to-b from-cream-light via-ivory to-bg" />
+        <div className="absolute inset-0 bg-ambient" />
+        <div className="absolute inset-0 bg-silk opacity-40" />
 
-        {/* Ornamental circle */}
-        <div className="absolute top-1/2 right-[10%] -translate-y-1/2 w-[400px] h-[400px] border border-gold/10 rounded-full hidden xl:block animate-spin-slow" />
-        <div className="absolute top-1/2 right-[10%] -translate-y-1/2 w-[340px] h-[340px] border border-gold/8 rounded-full hidden xl:block" style={{ animationDirection: "reverse" }} />
+        {/* Decorative blobs */}
+        <div className="absolute top-16 right-[5%] w-[500px] h-[500px] bg-gradient-to-br from-gold/8 to-peach/8 rounded-full blur-[80px] animate-breathe" />
+        <div className="absolute bottom-10 left-[5%] w-[400px] h-[400px] bg-gradient-to-tr from-rose/6 to-gold/4 rounded-full blur-[60px]" />
+        <div className="absolute top-1/3 left-1/2 w-[300px] h-[300px] bg-peach/5 animate-morph blur-[40px]" />
+
+        {/* Ornamental circles */}
+        <div className="absolute top-1/2 right-[8%] -translate-y-1/2 w-[420px] h-[420px] border border-gold/[0.06] rounded-full hidden xl:block animate-spin-slow" />
+        <div className="absolute top-1/2 right-[8%] -translate-y-1/2 w-[350px] h-[350px] border border-rose/[0.05] rounded-full hidden xl:block" style={{ animationDirection: "reverse", animation: "spinSlow 55s linear infinite reverse" }} />
+        <div className="absolute top-1/2 right-[8%] -translate-y-1/2 w-[280px] h-[280px] border border-gold/[0.04] rounded-full hidden xl:block animate-spin-slow" style={{ animationDuration: "70s" }} />
+
+        {/* Decorative sparkles */}
+        <div className="absolute top-[20%] right-[15%] hidden lg:block">
+          <Sparkles size={14} className="text-gold/20 animate-twinkle" />
+        </div>
+        <div className="absolute top-[60%] right-[25%] hidden lg:block">
+          <Star size={10} className="text-rose/20 animate-twinkle" style={{ animationDelay: "1.5s" }} />
+        </div>
+        <div className="absolute top-[35%] right-[30%] hidden lg:block">
+          <Gem size={12} className="text-gold/15 animate-twinkle" style={{ animationDelay: "0.8s" }} />
+        </div>
 
         <div className="relative max-w-7xl mx-auto px-6 lg:px-10 py-24 md:py-32 w-full">
           <div className="max-w-3xl">
             {/* Label */}
-            <div className="flex items-center gap-3 mb-6">
-              <span className="w-8 h-px bg-gold" />
+            <div className="flex items-center gap-3.5 mb-8">
+              <span className="w-10 h-px bg-gradient-to-r from-gold to-rose" />
               <span className="section-label">Institut de beauté &mdash; Seraing, Belgique</span>
             </div>
 
             {/* Headline */}
-            <h1 className="section-title text-4xl md:text-6xl lg:text-7xl mb-6 leading-[1.08]">
+            <h1 className="section-title text-[2.75rem] md:text-[4rem] lg:text-[5rem] mb-7 leading-[1.05] text-balance">
               Votre peau mérite
               <br />
               <span className="text-shimmer">l&apos;excellence</span>
             </h1>
 
             {/* Subheadline */}
-            <p className="text-text-muted text-lg md:text-xl leading-relaxed mb-10 max-w-xl">
+            <p className="text-text-muted text-lg md:text-xl leading-relaxed mb-12 max-w-xl">
               Un espace confidentiel dédié à celles et ceux qui recherchent une
               beauté intelligente. Soins du visage, hydradermabrasion,
               massages relaxants et beauté du regard &mdash; chaque protocole
@@ -178,12 +227,12 @@ export default function HomePage() {
             </p>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-14">
+            <div className="flex flex-col sm:flex-row gap-4 mb-16">
               <a
                 href="https://salonkee.be/salon/ginger?lang=fr"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-primary pulse-glow"
+                className="btn-gold pulse-glow"
               >
                 <span>Réserver un soin</span>
                 <ArrowRight size={18} />
@@ -195,13 +244,18 @@ export default function HomePage() {
             </div>
 
             {/* Stats */}
-            <div className="flex gap-8 md:gap-12">
+            <div className="flex gap-10 md:gap-14">
               {heroStats.map((stat) => (
-                <div key={stat.label}>
-                  <p className="font-serif text-olive text-2xl md:text-3xl font-bold">
-                    {stat.value}
-                  </p>
-                  <p className="text-text-dim text-xs mt-1 tracking-wide">{stat.label}</p>
+                <div key={stat.label} className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cream to-champagne flex items-center justify-center border border-gold/20">
+                    <stat.icon size={16} className="text-gold-dark" />
+                  </div>
+                  <div>
+                    <p className="font-serif text-olive text-xl md:text-2xl font-bold leading-none">
+                      {stat.value}
+                    </p>
+                    <p className="text-text-dim text-[11px] mt-0.5 tracking-wider">{stat.label}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -212,19 +266,21 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════════════════
           PROMISE — Brand statement
           ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-16 md:py-20 bg-cream-light relative">
+      <section className="relative py-20 md:py-24 bg-cream-light overflow-hidden">
+        <div className="absolute inset-0 bg-diamond opacity-30" />
         <div className="gold-divider mb-16" />
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <div className="ornament-dots mb-6">
+        <div className="relative max-w-4xl mx-auto px-6 text-center">
+          <div className="ornament-dots mb-8">
             <Sparkles size={16} className="text-gold" />
           </div>
-          <blockquote className="font-serif text-olive text-2xl md:text-4xl font-bold leading-snug mb-4 italic">
+          <blockquote className="font-accent text-olive text-3xl md:text-5xl font-medium leading-snug mb-6 italic tracking-wide">
             &ldquo;We don&apos;t conceal. We reveal.&rdquo;
           </blockquote>
-          <p className="text-text-muted max-w-2xl mx-auto leading-relaxed">
+          <div className="w-16 h-px bg-gradient-to-r from-transparent via-rose to-transparent mx-auto mb-6" />
+          <p className="text-text-muted max-w-2xl mx-auto leading-relaxed text-[15px]">
             Chez Ginger, nous croyons en une beauté qui respecte, qui comprend
             et qui sublime. Pas de masques, pas de promesses vides &mdash; juste
-            des soins d&apos;exception, des produits cosmétiques haut de gamme et un
+            des soins d&apos;exception, des cosmétiques haut de gamme et un
             savoir-faire passionné au service de votre peau.
           </p>
         </div>
@@ -234,15 +290,16 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════════════════
           EXPERTISES — Service categories
           ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-28">
-        <div className="max-w-7xl mx-auto px-6 lg:px-10">
-          <div className="text-center mb-16">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <span className="w-8 h-px bg-gold" />
+      <section className="py-24 md:py-32 relative">
+        <div className="absolute inset-0 bg-ambient opacity-50" />
+        <div className="relative max-w-7xl mx-auto px-6 lg:px-10">
+          <div className="text-center mb-20">
+            <div className="flex items-center justify-center gap-3 mb-5">
+              <span className="w-10 h-px bg-gradient-to-r from-transparent to-gold" />
               <span className="section-label">Nos expertises</span>
-              <span className="w-8 h-px bg-gold" />
+              <span className="w-10 h-px bg-gradient-to-r from-gold to-transparent" />
             </div>
-            <h2 className="section-title text-3xl md:text-5xl mb-4">
+            <h2 className="section-title text-3xl md:text-[3.25rem] mb-5 text-balance">
               Des soins d&apos;exception pour
               <br className="hidden md:block" />
               chaque besoin de votre peau
@@ -254,40 +311,40 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7 lg:gap-8">
             {expertises.map((service) => (
               <div
                 key={service.title}
-                className="group bg-white rounded-xl border border-border-light p-7 card-lift relative overflow-hidden"
+                className="group service-card p-8 relative"
               >
-                {/* Decorative corner */}
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-cream to-transparent rounded-bl-3xl" />
+                {/* Decorative corner gradient */}
+                <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl ${service.accent} rounded-bl-[60px] opacity-0 group-hover:opacity-100 transition-opacity duration-700`} />
 
                 <div className="relative">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cream to-sand flex items-center justify-center mb-5 border border-gold/20 group-hover:border-gold/40 transition-colors duration-300">
+                  <div className="icon-luxury mb-6">
                     <service.icon size={24} className="text-gold-dark" />
                   </div>
 
-                  <p className="text-gold-dark text-[11px] font-semibold tracking-[0.15em] uppercase mb-1">
+                  <p className="text-gold-dark text-[10px] font-semibold tracking-[0.18em] uppercase mb-1.5">
                     {service.subtitle}
                   </p>
                   <h3 className="font-serif text-olive text-xl font-bold mb-3">
                     {service.title}
                   </h3>
-                  <p className="text-text-muted text-sm leading-relaxed mb-5">
+                  <p className="text-text-muted text-sm leading-relaxed mb-6">
                     {service.description}
                   </p>
 
-                  <div className="flex items-center justify-between pt-4 border-t border-border-light">
-                    <span className="text-olive font-bold">{service.price}</span>
+                  <div className="flex items-center justify-between pt-5 border-t border-border-light/60">
+                    <span className="font-serif text-olive font-bold text-lg">{service.price}</span>
                     <a
                       href="https://salonkee.be/salon/ginger?lang=fr"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gold-dark text-sm font-medium hover:text-olive transition-colors flex items-center gap-1.5 group/link"
+                      className="text-gold-dark text-[12px] font-semibold tracking-wider uppercase hover:text-olive transition-colors flex items-center gap-2 group/link"
                     >
                       Réserver
-                      <ArrowRight size={14} className="group-hover/link:translate-x-1 transition-transform" />
+                      <ArrowRight size={13} className="group-hover/link:translate-x-1 transition-transform duration-300" />
                     </a>
                   </div>
                 </div>
@@ -295,7 +352,7 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div className="text-center mt-12">
+          <div className="text-center mt-14">
             <Link href="/services" className="btn-outline">
               <span>Voir tous nos soins &amp; tarifs</span>
               <ArrowRight size={16} />
@@ -305,19 +362,66 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
+          THE RITUAL — Step by step experience
+          ═══════════════════════════════════════════════════════════════════ */}
+      <section className="py-24 md:py-32 bg-cream-light relative overflow-hidden">
+        <div className="absolute inset-0 bg-silk opacity-30" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+
+        <div className="relative max-w-6xl mx-auto px-6 lg:px-10">
+          <div className="text-center mb-20">
+            <div className="flex items-center justify-center gap-3 mb-5">
+              <span className="w-10 h-px bg-gradient-to-r from-transparent to-gold" />
+              <span className="section-label">L&apos;expérience Ginger</span>
+              <span className="w-10 h-px bg-gradient-to-r from-gold to-transparent" />
+            </div>
+            <h2 className="section-title text-3xl md:text-[3.25rem] mb-5 text-balance">
+              Votre rituel beauté,
+              <br className="hidden md:block" />
+              <span className="text-shimmer-rose">étape par étape</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+            {ritualSteps.map((r) => (
+              <div key={r.step} className="text-center group">
+                <div className="relative mx-auto mb-8">
+                  {/* Step number ring */}
+                  <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-cream to-champagne border-2 border-gold/20 flex items-center justify-center group-hover:border-gold/40 transition-all duration-500 group-hover:shadow-[0_0_30px_rgba(196,169,125,0.15)]">
+                    <r.icon size={32} className="text-gold-dark/70 group-hover:text-gold-dark transition-colors duration-400" />
+                  </div>
+                  <span className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-gradient-to-br from-gold to-gold-dark text-white text-xs font-bold flex items-center justify-center shadow-lg">
+                    {r.step}
+                  </span>
+                </div>
+                <h3 className="font-serif text-olive text-xl font-bold mb-3">{r.title}</h3>
+                <p className="text-text-muted text-sm leading-relaxed max-w-xs mx-auto">{r.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════
           SKIN CONCERNS — SEO rich section
           ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-28 bg-linen-texture relative">
-        <div className="bg-radial-warm absolute inset-0" />
+      <section className="py-24 md:py-32 bg-linen-texture relative overflow-hidden">
+        <div className="bg-ambient absolute inset-0" />
         <div className="relative max-w-7xl mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-24 items-center">
             {/* Left — image placeholder */}
-            <div className="img-placeholder rounded-2xl aspect-[4/5] flex items-end p-8 border border-gold/15">
-              <div className="bg-white/90 backdrop-blur-sm rounded-xl p-6 w-full border border-gold/20">
-                <p className="font-serif text-olive font-bold text-lg mb-1">
+            <div className="img-placeholder rounded-[28px] aspect-[4/5] flex items-end p-8 border border-gold/12 relative group overflow-hidden">
+              {/* Floating decorative element */}
+              <div className="absolute top-8 right-8 w-20 h-20 border border-gold/15 rounded-full flex items-center justify-center">
+                <Sparkles size={20} className="text-gold/30 animate-twinkle" />
+              </div>
+              <div className="relative bg-white/92 backdrop-blur-md rounded-2xl p-7 w-full border border-gold/15 shadow-lg">
+                <p className="font-serif text-olive font-bold text-lg mb-1.5">
                   Diagnostic personnalisé
                 </p>
-                <p className="text-text-muted text-sm">
+                <p className="text-text-muted text-sm leading-relaxed">
                   Chaque soin commence par une analyse de votre type de peau
                   et de vos préoccupations spécifiques.
                 </p>
@@ -326,16 +430,16 @@ export default function HomePage() {
 
             {/* Right — content */}
             <div>
-              <div className="flex items-center gap-3 mb-4">
-                <span className="w-8 h-px bg-gold" />
+              <div className="flex items-center gap-3.5 mb-5">
+                <span className="w-10 h-px bg-gradient-to-r from-gold to-rose" />
                 <span className="section-label">Pour chaque préoccupation</span>
               </div>
-              <h2 className="section-title text-3xl md:text-4xl mb-6">
+              <h2 className="section-title text-3xl md:text-[2.75rem] mb-6 leading-tight">
                 Votre peau a des besoins uniques.
                 <br />
-                <span className="text-gold-dark">Nous les comprenons.</span>
+                <span className="text-gradient-gold">Nous les comprenons.</span>
               </h2>
-              <p className="text-text-muted leading-relaxed mb-8">
+              <p className="text-text-muted leading-relaxed mb-10">
                 Que vous cherchiez à ralentir le vieillissement cutané, retrouver
                 un teint lumineux, atténuer les imperfections ou simplement offrir
                 à votre épiderme un moment de régénération intense &mdash; nos
@@ -343,13 +447,13 @@ export default function HomePage() {
                 précisément à vos besoins.
               </p>
 
-              <div className="grid grid-cols-2 gap-3 mb-8">
+              <div className="grid grid-cols-2 gap-3 mb-10">
                 {skinConcerns.map((concern) => (
                   <div
                     key={concern}
-                    className="flex items-center gap-2.5 bg-white/80 rounded-lg px-4 py-3 border border-border-light text-sm text-olive"
+                    className="flex items-center gap-3 bg-white/85 backdrop-blur-sm rounded-xl px-4 py-3.5 border border-border-light/80 text-sm text-olive hover:border-gold/30 hover:bg-white transition-all duration-300"
                   >
-                    <CheckCircle size={16} className="text-gold shrink-0" />
+                    <CheckCircle size={15} className="text-gold shrink-0" />
                     {concern}
                   </div>
                 ))}
@@ -372,30 +476,31 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════════════════
           WHY CHOOSE US
           ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-28">
-        <div className="max-w-7xl mx-auto px-6 lg:px-10">
-          <div className="text-center mb-16">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <span className="w-8 h-px bg-gold" />
+      <section className="py-24 md:py-32 relative">
+        <div className="absolute inset-0 bg-ambient opacity-30" />
+        <div className="relative max-w-7xl mx-auto px-6 lg:px-10">
+          <div className="text-center mb-20">
+            <div className="flex items-center justify-center gap-3 mb-5">
+              <span className="w-10 h-px bg-gradient-to-r from-transparent to-gold" />
               <span className="section-label">Notre philosophie</span>
-              <span className="w-8 h-px bg-gold" />
+              <span className="w-10 h-px bg-gradient-to-r from-gold to-transparent" />
             </div>
-            <h2 className="section-title text-3xl md:text-5xl mb-4">
+            <h2 className="section-title text-3xl md:text-[3.25rem] mb-4 text-balance">
               Pourquoi choisir Ginger&nbsp;?
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
-            {whyUs.map((item, i) => (
+            {whyUs.map((item) => (
               <div
                 key={item.title}
-                className="flex gap-5 p-6 rounded-xl bg-white border border-border-light card-lift"
+                className="group flex gap-6 p-8 rounded-2xl bg-white border border-border-light/80 service-card"
               >
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cream to-sand flex items-center justify-center shrink-0 border border-gold/20">
+                <div className="icon-luxury shrink-0">
                   <item.icon size={24} className="text-gold-dark" />
                 </div>
                 <div>
-                  <h3 className="font-serif text-olive font-bold text-lg mb-2">
+                  <h3 className="font-serif text-olive font-bold text-lg mb-2.5">
                     {item.title}
                   </h3>
                   <p className="text-text-muted text-sm leading-relaxed">
@@ -411,18 +516,21 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════════════════
           TESTIMONIALS
           ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-28 bg-cream-light">
-        <div className="max-w-7xl mx-auto px-6 lg:px-10">
-          <div className="text-center mb-16">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <span className="w-8 h-px bg-gold" />
+      <section className="py-24 md:py-32 bg-cream-light relative overflow-hidden">
+        <div className="absolute inset-0 bg-silk opacity-20" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
+
+        <div className="relative max-w-7xl mx-auto px-6 lg:px-10">
+          <div className="text-center mb-20">
+            <div className="flex items-center justify-center gap-3 mb-5">
+              <span className="w-10 h-px bg-gradient-to-r from-transparent to-gold" />
               <span className="section-label">Avis vérifiés</span>
-              <span className="w-8 h-px bg-gold" />
+              <span className="w-10 h-px bg-gradient-to-r from-gold to-transparent" />
             </div>
-            <h2 className="section-title text-3xl md:text-5xl mb-2">
-              4.9 <span className="text-gold">&#9733;</span> sur 5
+            <h2 className="section-title text-3xl md:text-[3.25rem] mb-3 text-balance">
+              4.9 <span className="text-gradient-gold">&#9733;</span> sur 5
             </h2>
-            <p className="text-text-muted">
+            <p className="text-text-muted text-[15px]">
               Elles ont confié leur peau à Ginger
             </p>
           </div>
@@ -431,38 +539,50 @@ export default function HomePage() {
             {testimonials.map((t) => (
               <div
                 key={t.name}
-                className="bg-white rounded-xl border border-border-light p-6 card-lift flex flex-col"
+                className="testimonial-card p-7 flex flex-col"
               >
-                <div className="flex gap-0.5 mb-1">
+                <div className="flex gap-0.5 mb-2">
                   {Array.from({ length: t.rating }).map((_, i) => (
-                    <Star key={i} size={14} className="fill-gold text-gold" />
+                    <Star key={i} size={13} className="fill-gold text-gold" />
                   ))}
                 </div>
-                <p className="text-[11px] text-gold-dark font-medium tracking-wide uppercase mb-3">
+                <p className="text-[10px] text-gold-dark font-semibold tracking-[0.15em] uppercase mb-4">
                   {t.service}
                 </p>
-                <p className="text-text-muted text-sm leading-relaxed mb-4 italic flex-1">
+                <p className="text-text-muted text-sm leading-relaxed mb-5 italic flex-1">
                   &ldquo;{t.text}&rdquo;
                 </p>
-                <p className="text-olive font-semibold text-sm">{t.name}</p>
+                <div className="flex items-center gap-3 pt-4 border-t border-border-light/60">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cream to-champagne flex items-center justify-center border border-gold/20">
+                    <span className="font-serif text-olive text-xs font-bold">{t.name[0]}</span>
+                  </div>
+                  <span className="text-olive font-semibold text-sm">{t.name}</span>
+                </div>
               </div>
             ))}
           </div>
         </div>
+
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent" />
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
           FORMATIONS CTA
           ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-24">
+      <section className="py-24 md:py-28">
         <div className="max-w-7xl mx-auto px-6 lg:px-10">
-          <div className="bg-gradient-to-br from-cream via-cream-light to-linen rounded-2xl border border-gold/20 p-10 md:p-16 flex flex-col md:flex-row items-center gap-10 card-glow">
-            <div className="flex-1">
-              <span className="section-label mb-3 block">Formations & Ateliers</span>
-              <h2 className="section-title text-2xl md:text-4xl mb-4">
+          <div className="relative bg-gradient-to-br from-cream via-champagne to-linen rounded-[28px] border border-gold/15 p-10 md:p-16 flex flex-col md:flex-row items-center gap-12 overflow-hidden">
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-gold/8 to-transparent rounded-bl-full" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-rose/6 to-transparent rounded-tr-full" />
+            <div className="absolute inset-0 bg-diamond opacity-20" />
+
+            <div className="flex-1 relative">
+              <span className="section-label mb-4 block">Formations & Ateliers</span>
+              <h2 className="section-title text-2xl md:text-4xl mb-5">
                 Développez vos compétences beauté
               </h2>
-              <p className="text-text-muted leading-relaxed mb-6">
+              <p className="text-text-muted leading-relaxed mb-8">
                 Cours d&apos;auto-maquillage, formation professionnelle Korean Lashlift
                 ou atelier soin visage &mdash; apprenez les gestes experts dans un cadre
                 bienveillant et passionné. Des ateliers collaboratifs pensés pour
@@ -473,10 +593,12 @@ export default function HomePage() {
                 <ArrowRight size={16} />
               </Link>
             </div>
-            <div className="w-full md:w-72 h-60 img-placeholder rounded-xl border border-gold/15 flex items-center justify-center shrink-0">
-              <div className="text-center">
-                <Award size={40} className="text-gold/40 mx-auto mb-3" />
-                <p className="font-serif text-olive/60 text-sm">Formation & partage</p>
+            <div className="relative w-full md:w-80 h-64 img-placeholder rounded-2xl border border-gold/12 flex items-center justify-center shrink-0 overflow-hidden">
+              <div className="text-center relative z-10">
+                <div className="w-16 h-16 rounded-full bg-white/60 backdrop-blur-sm flex items-center justify-center mx-auto mb-3 border border-gold/20">
+                  <Award size={28} className="text-gold/50" />
+                </div>
+                <p className="font-serif text-olive/50 text-sm">Formation & partage</p>
               </div>
             </div>
           </div>
@@ -486,27 +608,31 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════════════════
           CTA FINAL
           ═══════════════════════════════════════════════════════════════════ */}
-      <section className="relative py-24 md:py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-anthracite via-brun-dark to-olive-warm" />
-        <div className="absolute inset-0 bg-radial-warm opacity-30" />
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+      <section className="relative py-28 md:py-36 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-charcoal via-anthracite to-brun-dark" />
+        <div className="absolute inset-0 bg-diamond opacity-5" />
+        <div className="absolute inset-0 bg-ambient opacity-10" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/25 to-transparent" />
+
+        {/* Decorative glows */}
+        <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[300px] h-[300px] bg-gold/[0.03] rounded-full blur-[80px]" />
+        <div className="absolute top-1/3 right-1/4 w-[200px] h-[200px] bg-rose/[0.03] rounded-full blur-[60px]" />
 
         <div className="relative max-w-3xl mx-auto px-6 text-center">
-          <div className="ornament-dots mb-8 [&>*]:text-gold/50 [&::before]:bg-gradient-to-r [&::before]:from-transparent [&::before]:to-gold/30 [&::after]:bg-gradient-to-r [&::after]:from-gold/30 [&::after]:to-transparent">
-            <Sparkles size={16} className="text-gold/50" />
+          <div className="ornament-dots mb-10 [&>*]:text-gold/40 [&::before]:bg-gradient-to-r [&::before]:from-transparent [&::before]:to-gold/25 [&::after]:bg-gradient-to-r [&::after]:from-gold/25 [&::after]:to-transparent">
+            <Sparkles size={16} className="text-gold/40" />
           </div>
 
-          <h2 className="font-serif text-white text-3xl md:text-5xl font-bold mb-6 leading-tight">
+          <h2 className="font-accent text-white text-4xl md:text-[3.5rem] font-light mb-7 leading-tight tracking-wide italic">
             Prête à révéler
             <br />
             votre éclat naturel&nbsp;?
           </h2>
-          <p className="text-white/60 text-lg mb-10 leading-relaxed">
+          <p className="text-white/50 text-lg mb-12 leading-relaxed max-w-lg mx-auto">
             Réservez votre soin en quelques clics et offrez à votre peau
-            l&apos;attention qu&apos;elle mérite. Diagnostic personnalisé, soins experts
-            et résultats visibles.
+            l&apos;attention qu&apos;elle mérite.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
             <a
               href="https://salonkee.be/salon/ginger?lang=fr"
               target="_blank"
@@ -518,7 +644,7 @@ export default function HomePage() {
             </a>
             <a
               href="tel:+32499295849"
-              className="inline-flex items-center gap-2 text-white/70 hover:text-white border border-white/20 hover:border-white/40 px-8 py-3.5 rounded-pill transition-all text-sm font-medium"
+              className="inline-flex items-center gap-2.5 text-white/60 hover:text-white border border-white/15 hover:border-white/30 px-8 py-4 rounded-pill transition-all duration-400 text-sm font-medium tracking-wider"
             >
               +32 499 29 58 49
             </a>
