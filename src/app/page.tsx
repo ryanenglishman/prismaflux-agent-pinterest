@@ -462,6 +462,26 @@ export default function Dashboard() {
   // Platform tab copy state
   const [platformCopied, setPlatformCopied] = useState<string | null>(null);
 
+  // Guardrails
+  const [guards, setGuards] = useState<{
+    allowed: boolean;
+    reason?: string;
+    dailyCount: number;
+    dailyMax: number;
+    monthlyCount: number;
+    monthlyMax: number;
+    estimatedCost: number;
+    cooldownWait: number;
+    killSwitch: boolean;
+  } | null>(null);
+
+  // Republication
+  const [republishStrategy, setRepublishStrategy] = useState<string | null>(null);
+  const [republishLoading, setRepublishLoading] = useState(false);
+  const [republishResult, setRepublishResult] = useState<{ success: boolean; message?: string; pinId?: string } | null>(null);
+  const [republishPreviewId, setRepublishPreviewId] = useState("");
+  const [republishBoardId, setRepublishBoardId] = useState("");
+
   // SEO tips array
   const SEO_TIPS = useMemo(() => [
     "Publiez entre 20h-21h pour maximiser l'engagement",
@@ -625,6 +645,76 @@ export default function Dashboard() {
   }, []);
 
   // -------------------------------------------------------------------------
+  // Fetch Guardrails
+  // -------------------------------------------------------------------------
+
+  const fetchGuardrails = useCallback(async () => {
+    try {
+      const res = await fetch("/api/guardrails");
+      if (res.ok) {
+        const data = await res.json();
+        setGuards(data.guards || null);
+      }
+    } catch {
+      /* silent */
+    }
+  }, []);
+
+  // -------------------------------------------------------------------------
+  // Kill Switch Toggle
+  // -------------------------------------------------------------------------
+
+  async function killSwitchToggle() {
+    if (!guards) return;
+    try {
+      const res = await fetch("/api/guardrails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ killSwitch: !guards.killSwitch }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setGuards(data.guards || null);
+      }
+    } catch {
+      /* silent */
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Republish Handler
+  // -------------------------------------------------------------------------
+
+  async function handleRepublish(strategy: string) {
+    if (!republishPreviewId && ["best_pin", "new_text", "test_time", "season_version"].includes(strategy)) return;
+    if (!republishBoardId && strategy === "other_board") return;
+    setRepublishLoading(true);
+    setRepublishResult(null);
+    try {
+      const res = await fetch("/api/republish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          strategy,
+          previewId: republishPreviewId || undefined,
+          boardId: republishBoardId || undefined,
+        }),
+      });
+      const data = await res.json();
+      setRepublishResult(data);
+      if (data.success) {
+        await fetchPreviews();
+      }
+    } catch (err) {
+      setRepublishResult({
+        success: false,
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+    setRepublishLoading(false);
+  }
+
+  // -------------------------------------------------------------------------
   // Mount
   // -------------------------------------------------------------------------
 
@@ -633,7 +723,8 @@ export default function Dashboard() {
     fetchPosts();
     fetchPreviews();
     fetchSuggestion();
-  }, [fetchAuth, fetchPosts, fetchPreviews, fetchSuggestion]);
+    fetchGuardrails();
+  }, [fetchAuth, fetchPosts, fetchPreviews, fetchSuggestion, fetchGuardrails]);
 
   // Fetch boards when form opens and connected
   useEffect(() => {
@@ -655,9 +746,9 @@ export default function Dashboard() {
     }
   }, [activeTab, fetchPreviews, fetchPrompts]);
 
-  // Fetch boards for batch mode on calendrier tab
+  // Fetch boards for batch mode on calendrier tab and republication on publications tab
   useEffect(() => {
-    if (activeTab === "calendrier" && auth?.connected && !boardsLoaded) {
+    if ((activeTab === "calendrier" || activeTab === "publications") && auth?.connected && !boardsLoaded) {
       fetchBoards();
     }
   }, [activeTab, auth, boardsLoaded, fetchBoards]);
@@ -1505,6 +1596,181 @@ export default function Dashboard() {
         </section>
 
         {/* ================================================================= */}
+        {/* Guardrails Status Bar                                              */}
+        {/* ================================================================= */}
+        {guards && (
+          <section style={{ marginBottom: isMobile ? 16 : 24 }}>
+            {/* Kill switch active banner */}
+            {guards.killSwitch && (
+              <div
+                style={{
+                  background: "#7f1d1d",
+                  borderRadius: 12,
+                  border: "2px solid #ef4444",
+                  padding: isMobile ? "12px 14px" : "14px 20px",
+                  marginBottom: 10,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexWrap: "wrap",
+                  animation: "pulse 1.5s infinite",
+                }}
+              >
+                <span style={{ fontSize: 15, fontWeight: 700, color: "#fca5a5" }}>
+                  PUBLICATIONS DESACTIVEES
+                </span>
+                <button
+                  onClick={killSwitchToggle}
+                  style={{
+                    background: "#14532d",
+                    color: "#86efac",
+                    border: "1px solid #166534",
+                    borderRadius: 8,
+                    padding: "8px 20px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Reactiver
+                </button>
+              </div>
+            )}
+
+            {/* Not allowed warning */}
+            {!guards.allowed && !guards.killSwitch && guards.reason && (
+              <div
+                style={{
+                  background: dark ? "#1c1812" : "#fffbeb",
+                  borderRadius: 12,
+                  border: "1px solid #f59e0b66",
+                  padding: isMobile ? "10px 14px" : "12px 20px",
+                  marginBottom: 10,
+                  fontSize: 13,
+                  color: "#fbbf24",
+                  fontWeight: 600,
+                }}
+              >
+                {guards.reason}
+              </div>
+            )}
+
+            {/* Usage bar */}
+            <div
+              style={{
+                background: colors.card,
+                borderRadius: 12,
+                border: `1px solid ${colors.border}`,
+                padding: isMobile ? "10px 14px" : "12px 20px",
+                display: "flex",
+                alignItems: "center",
+                gap: isMobile ? 10 : 20,
+                flexWrap: "wrap",
+              }}
+            >
+              {/* Daily usage */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ flex: "0 0 auto" }}>
+                  <span style={{ fontSize: 12, color: colors.muted, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: 0.5 }}>
+                    Publications
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div
+                    style={{
+                      width: isMobile ? 60 : 80,
+                      height: 6,
+                      borderRadius: 3,
+                      background: colors.border,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${guards.dailyMax > 0 ? Math.min(100, (guards.dailyCount / guards.dailyMax) * 100) : 0}%`,
+                        height: "100%",
+                        borderRadius: 3,
+                        background: guards.dailyCount >= guards.dailyMax ? "#ef4444" : "#22c55e",
+                        transition: "width 0.3s",
+                      }}
+                    />
+                  </div>
+                  <span style={{ fontSize: 12, color: colors.text, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+                    {guards.dailyCount}/{guards.dailyMax} aujourd{"'"}hui
+                  </span>
+                </div>
+              </div>
+
+              {/* Monthly usage */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ flex: "0 0 auto" }}>
+                  <span style={{ fontSize: 12, color: colors.muted, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: 0.5 }}>
+                    Generations
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div
+                    style={{
+                      width: isMobile ? 60 : 80,
+                      height: 6,
+                      borderRadius: 3,
+                      background: colors.border,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${guards.monthlyMax > 0 ? Math.min(100, (guards.monthlyCount / guards.monthlyMax) * 100) : 0}%`,
+                        height: "100%",
+                        borderRadius: 3,
+                        background: guards.monthlyCount >= guards.monthlyMax ? "#ef4444" : "#3b82f6",
+                        transition: "width 0.3s",
+                      }}
+                    />
+                  </div>
+                  <span style={{ fontSize: 12, color: colors.text, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+                    {guards.monthlyCount}/{guards.monthlyMax} ce mois (~${guards.estimatedCost.toFixed(2)})
+                  </span>
+                </div>
+              </div>
+
+              {/* Cooldown */}
+              {guards.cooldownWait > 0 && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 600 }}>
+                    Cooldown: {guards.cooldownWait} min restantes
+                  </span>
+                </div>
+              )}
+
+              {/* Kill switch button */}
+              <div style={{ marginLeft: "auto" }}>
+                <button
+                  onClick={killSwitchToggle}
+                  style={{
+                    background: guards.killSwitch ? "#14532d" : "#7f1d1d",
+                    color: guards.killSwitch ? "#86efac" : "#fca5a5",
+                    border: guards.killSwitch ? "2px solid #166534" : "2px solid #ef4444",
+                    borderRadius: 8,
+                    padding: isMobile ? "8px 14px" : "8px 20px",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    textTransform: "uppercase" as const,
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  {guards.killSwitch ? "Reactiver" : "STOP TOUT"}
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ================================================================= */}
         {/* SEO Tips (collapsible)                                             */}
         {/* ================================================================= */}
         <section style={{ marginBottom: isMobile ? 16 : 24 }}>
@@ -2244,6 +2510,204 @@ export default function Dashboard() {
               >
                 Chargement des publications...
               </div>
+            ) : posts.length === 0 && previews.length === 0 ? (
+              /* Onboarding empty state */
+              <div
+                style={{
+                  background: dark
+                    ? "linear-gradient(135deg, #18181b, #1a1a2e)"
+                    : "linear-gradient(135deg, #fefefe, #f0f0ff)",
+                  borderRadius: 16,
+                  border: `1px solid ${colors.accent}33`,
+                  padding: isMobile ? "28px 20px" : "40px 32px",
+                  textAlign: "center",
+                }}
+              >
+                <div
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 16,
+                    background: "linear-gradient(135deg, #e63232, #ff4444)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 26,
+                    fontWeight: 700,
+                    color: "#0a0a0f",
+                    margin: "0 auto 16px",
+                  }}
+                >
+                  P
+                </div>
+                <h3
+                  style={{
+                    fontSize: isMobile ? 18 : 22,
+                    fontWeight: 700,
+                    color: colors.text,
+                    margin: "0 0 8px",
+                  }}
+                >
+                  Bienvenue sur PrismaFlux Agent Pinterest
+                </h3>
+                <p
+                  style={{
+                    fontSize: 14,
+                    color: colors.muted,
+                    margin: "0 0 24px",
+                    lineHeight: 1.6,
+                    maxWidth: 480,
+                    marginLeft: "auto",
+                    marginRight: "auto",
+                  }}
+                >
+                  Commencez par connecter votre compte Pinterest, puis generez votre
+                  premiere semaine de contenu.
+                </p>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: isMobile ? 12 : 24,
+                    flexWrap: "wrap",
+                    marginBottom: 24,
+                  }}
+                >
+                  {/* Step 1 */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: "50%",
+                        background: auth?.connected ? "#14532d" : `${colors.accent}22`,
+                        border: auth?.connected ? "2px solid #22c55e" : `2px solid ${colors.accent}`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: auth?.connected ? "#86efac" : colors.accent,
+                      }}
+                    >
+                      {auth?.connected ? "\u2713" : "1"}
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: auth?.connected ? "#22c55e" : colors.text,
+                      }}
+                    >
+                      Connecter Pinterest
+                    </span>
+                  </div>
+
+                  {/* Arrow */}
+                  <span style={{ fontSize: 14, color: colors.muted, alignSelf: "center" }}>{"\u2192"}</span>
+
+                  {/* Step 2 */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: "50%",
+                        background: auth?.connected && !boardsLoaded ? `${colors.accent}22` : colors.bg,
+                        border: `2px solid ${auth?.connected ? colors.accent : colors.border}`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: auth?.connected ? colors.accent : colors.muted,
+                      }}
+                    >
+                      2
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: auth?.connected ? colors.text : colors.muted,
+                      }}
+                    >
+                      Generer un batch
+                    </span>
+                  </div>
+
+                  {/* Arrow */}
+                  <span style={{ fontSize: 14, color: colors.muted, alignSelf: "center" }}>{"\u2192"}</span>
+
+                  {/* Step 3 */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: "50%",
+                        background: colors.bg,
+                        border: `2px solid ${colors.border}`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: colors.muted,
+                      }}
+                    >
+                      3
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: colors.muted,
+                      }}
+                    >
+                      Approuver & Publier
+                    </span>
+                  </div>
+                </div>
+
+                {/* CTA */}
+                {!auth?.connected ? (
+                  <a
+                    href="/api/auth/pinterest"
+                    style={{
+                      display: "inline-block",
+                      background: "linear-gradient(135deg, #e63232, #ff4444)",
+                      color: "#0a0a0f",
+                      border: "none",
+                      borderRadius: 10,
+                      padding: "12px 32px",
+                      fontSize: 15,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      textDecoration: "none",
+                    }}
+                  >
+                    Commencer
+                  </a>
+                ) : (
+                  <button
+                    onClick={() => setActiveTab("calendrier")}
+                    style={{
+                      background: "linear-gradient(135deg, #e63232, #ff4444)",
+                      color: "#0a0a0f",
+                      border: "none",
+                      borderRadius: 10,
+                      padding: "12px 32px",
+                      fontSize: 15,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    Commencer
+                  </button>
+                )}
+              </div>
             ) : posts.length === 0 ? (
               <div
                 style={{
@@ -2304,6 +2768,275 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
+
+            {/* ============================================================= */}
+            {/* REPUBLICATION                                                  */}
+            {/* ============================================================= */}
+            <div style={{ marginTop: isMobile ? 20 : 28 }}>
+              <SectionTitle colors={colors}>Republication</SectionTitle>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(200px, 1fr))",
+                  gap: 10,
+                  marginBottom: 16,
+                }}
+              >
+                {/* Strategy 1: Meilleur Pin */}
+                <div
+                  style={{
+                    background: republishStrategy === "best_pin" ? `${colors.accent}11` : colors.card,
+                    borderRadius: 12,
+                    border: `1px solid ${republishStrategy === "best_pin" ? colors.accent : colors.border}`,
+                    padding: isMobile ? "12px 14px" : "14px 16px",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                  onClick={() => setRepublishStrategy(republishStrategy === "best_pin" ? null : "best_pin")}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: 18 }}>{"\u2605"}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>Meilleur Pin</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: colors.muted, margin: 0, lineHeight: 1.5 }}>
+                    Republier le pin le plus performant avec un nouveau texte
+                  </p>
+                </div>
+
+                {/* Strategy 2: Nouveau Texte */}
+                <div
+                  style={{
+                    background: republishStrategy === "new_text" ? `${colors.accent}11` : colors.card,
+                    borderRadius: 12,
+                    border: `1px solid ${republishStrategy === "new_text" ? colors.accent : colors.border}`,
+                    padding: isMobile ? "12px 14px" : "14px 16px",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                  onClick={() => setRepublishStrategy(republishStrategy === "new_text" ? null : "new_text")}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: 18 }}>{"\u21BB"}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>Nouveau Texte</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: colors.muted, margin: 0, lineHeight: 1.5 }}>
+                    Meme image, nouveau titre et description
+                  </p>
+                </div>
+
+                {/* Strategy 3: Autre Tableau */}
+                <div
+                  style={{
+                    background: republishStrategy === "other_board" ? `${colors.accent}11` : colors.card,
+                    borderRadius: 12,
+                    border: `1px solid ${republishStrategy === "other_board" ? colors.accent : colors.border}`,
+                    padding: isMobile ? "12px 14px" : "14px 16px",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                  onClick={() => setRepublishStrategy(republishStrategy === "other_board" ? null : "other_board")}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: 18 }}>{"\u25A6"}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>Autre Tableau</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: colors.muted, margin: 0, lineHeight: 1.5 }}>
+                    Publier sur un autre tableau Pinterest
+                  </p>
+                </div>
+
+                {/* Strategy 4: Test Horaire */}
+                <div
+                  style={{
+                    background: republishStrategy === "test_time" ? `${colors.accent}11` : colors.card,
+                    borderRadius: 12,
+                    border: `1px solid ${republishStrategy === "test_time" ? colors.accent : colors.border}`,
+                    padding: isMobile ? "12px 14px" : "14px 16px",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                  onClick={() => setRepublishStrategy(republishStrategy === "test_time" ? null : "test_time")}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: 18 }}>{"\u23F0"}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>Test Horaire</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: colors.muted, margin: 0, lineHeight: 1.5 }}>
+                    A/B test avec une heure differente
+                  </p>
+                </div>
+
+                {/* Strategy 5: Version Saison */}
+                <div
+                  style={{
+                    background: republishStrategy === "season_version" ? `${colors.accent}11` : colors.card,
+                    borderRadius: 12,
+                    border: `1px solid ${republishStrategy === "season_version" ? colors.accent : colors.border}`,
+                    padding: isMobile ? "12px 14px" : "14px 16px",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                  onClick={() => setRepublishStrategy(republishStrategy === "season_version" ? null : "season_version")}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: 18 }}>{"\uD83D\uDCC5"}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>Version Saison</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: colors.muted, margin: 0, lineHeight: 1.5 }}>
+                    Adapter le contenu au mois en cours
+                  </p>
+                </div>
+              </div>
+
+              {/* Expanded strategy panel */}
+              {republishStrategy && (
+                <div
+                  style={{
+                    background: colors.card,
+                    borderRadius: 12,
+                    border: `1px solid ${colors.accent}33`,
+                    padding: isMobile ? "12px 14px" : "16px 20px",
+                    animation: "fadeIn 0.3s ease",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      flexWrap: "wrap",
+                      marginBottom: republishResult ? 12 : 0,
+                    }}
+                  >
+                    {/* Preview selector (for strategies needing previewId) */}
+                    {["best_pin", "new_text", "test_time", "season_version"].includes(republishStrategy) && (
+                      <div style={{ flex: 1, minWidth: isMobile ? "100%" : 200 }}>
+                        <label style={{ fontSize: 12, color: colors.muted, fontWeight: 600, display: "block", marginBottom: 4 }}>
+                          Preview source
+                        </label>
+                        <select
+                          value={republishPreviewId}
+                          onChange={(e) => setRepublishPreviewId(e.target.value)}
+                          style={{
+                            width: "100%",
+                            background: colors.bg,
+                            color: colors.text,
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: 8,
+                            padding: "8px 12px",
+                            fontSize: 13,
+                            fontFamily: "inherit",
+                            outline: "none",
+                          }}
+                        >
+                          <option value="">Choisir un preview...</option>
+                          {previews
+                            .filter((p) => p.status === "published" || p.status === "approved")
+                            .slice(0, 20)
+                            .map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.content.title?.slice(0, 50) || "Sans titre"} — {new Date(p.createdAt).toLocaleDateString("fr-FR")}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Board selector (for other_board) */}
+                    {republishStrategy === "other_board" && (
+                      <div style={{ flex: 1, minWidth: isMobile ? "100%" : 200 }}>
+                        <label style={{ fontSize: 12, color: colors.muted, fontWeight: 600, display: "block", marginBottom: 4 }}>
+                          Tableau cible
+                        </label>
+                        <select
+                          value={republishBoardId}
+                          onChange={(e) => setRepublishBoardId(e.target.value)}
+                          style={{
+                            width: "100%",
+                            background: colors.bg,
+                            color: colors.text,
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: 8,
+                            padding: "8px 12px",
+                            fontSize: 13,
+                            fontFamily: "inherit",
+                            outline: "none",
+                          }}
+                        >
+                          <option value="">Choisir un tableau...</option>
+                          {boards.map((b) => (
+                            <option key={b.id} value={b.id}>
+                              {b.name} ({b.pinCount} pins)
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Action button */}
+                    <div style={{ flexShrink: 0, alignSelf: "flex-end" }}>
+                      <button
+                        onClick={() => handleRepublish(republishStrategy)}
+                        disabled={republishLoading}
+                        style={{
+                          background: republishLoading
+                            ? colors.border
+                            : "linear-gradient(135deg, #e63232, #ff4444)",
+                          color: republishLoading ? colors.muted : "#0a0a0f",
+                          border: "none",
+                          borderRadius: 8,
+                          padding: "10px 20px",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: republishLoading ? "not-allowed" : "pointer",
+                          fontFamily: "inherit",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {republishLoading
+                          ? "En cours..."
+                          : republishStrategy === "best_pin" || republishStrategy === "other_board"
+                            ? "Republier"
+                            : "Generer"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Republish result */}
+                  {republishResult && (
+                    <div
+                      style={{
+                        background: republishResult.success ? "#14532d22" : "#7f1d1d22",
+                        border: `1px solid ${republishResult.success ? "#16653466" : "#991b1b66"}`,
+                        borderRadius: 8,
+                        padding: "10px 14px",
+                        fontSize: 13,
+                        color: republishResult.success ? "#86efac" : "#fca5a5",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 8,
+                      }}
+                    >
+                      <span>{republishResult.message || (republishResult.success ? "Republication reussie" : "Erreur")}</span>
+                      <button
+                        onClick={() => setRepublishResult(null)}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          color: colors.muted,
+                          cursor: "pointer",
+                          fontSize: 14,
+                          padding: "2px 6px",
+                        }}
+                      >
+                        {"\u2715"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </section>
         )}
 

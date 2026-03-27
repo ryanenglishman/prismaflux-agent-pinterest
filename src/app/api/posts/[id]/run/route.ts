@@ -3,6 +3,7 @@ import { getPost, updatePostRunStatus } from "@/lib/kv/posts";
 import { getSession } from "@/lib/auth/session";
 import { getTokens } from "@/lib/kv/tokens";
 import { runPinterestPipeline } from "@/lib/marketing/pinterest/pipeline";
+import { checkAllGuards, incrementDailyPublish, incrementMonthlyGen, setLastPublishTime } from "@/lib/marketing/pinterest/guardrails";
 
 export const maxDuration = 60;
 
@@ -15,6 +16,12 @@ export async function POST(
   const post = await getPost(id);
   if (!post) {
     return NextResponse.json({ error: "Post non trouve" }, { status: 404 });
+  }
+
+  // Check guardrails
+  const guards = await checkAllGuards();
+  if (!guards.allowed) {
+    return NextResponse.json({ error: guards.reason, guards }, { status: 429 });
   }
 
   // Get access token from session or KV
@@ -53,6 +60,13 @@ export async function POST(
     result.error || null,
     result.pin?.pinId || null,
   );
+
+  // Update guardrail counters
+  if (result.success) {
+    await incrementDailyPublish();
+    await setLastPublishTime();
+  }
+  await incrementMonthlyGen();
 
   return NextResponse.json(result, {
     status: result.success ? 200 : 500,
