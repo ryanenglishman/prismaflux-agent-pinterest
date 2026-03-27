@@ -5,7 +5,52 @@
       "name": "dev",
       "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
       "runtimeArgs": ["node_modules/next/dist/bin/next", "dev"],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "pinterest-agent",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["C:\\Users\\eric-\\prismaflux-agent-pinterest\\start-dev.js"],
+      "port": 3002,
+      "autoPort": true
+    },
+    {
+      "name": "site-web",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["C:\\Users\\eric-\\prismaflux-agent-site-web\\start-dev.js", "dev", "--port", "3003"],
+      "port": 3003
+    },
+    {
+      "name": "blog-ia",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["C:\\Users\\eric-\\prismaflux-blog-ia-standalone\\start-dev.js", "dev"],
       "port": 3000
+    },
+    {
+      "name": "variante-2",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["C:\\Users\\eric-\\prismaflux-app-variante-2\\start-dev.js", "dev", "--port", "3004"],
+      "port": 3004
+    },
+    {
+      "name": "vehicle-db",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["C:\\Users\\eric-\\prismaflux-vehicle-db\\start-dev.js", "dev", "--port", "3005"],
+      "port": 3005
+    },
+    {
+      "name": "catalogue",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\npx.cmd",
+      "runtimeArgs": ["next", "dev", "--port", "3010"],
+      "port": 3010,
+      "cwd": "C:\\Users\\eric-\\prismaflux-rapport-catalogue"
+    },
+    {
+      "name": "site-agence",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["C:\\Users\\eric-\\prismaflux-site-agence\\start-dev.js"],
+      "port": 3002
     }
   ]
 }
