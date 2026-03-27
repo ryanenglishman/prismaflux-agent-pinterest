@@ -11,6 +11,18 @@ export async function GET() {
     tokens = (await getTokens()) ?? undefined;
   }
 
+  // Fallback to env var (direct access token)
+  if (!tokens && process.env.PINTEREST_ACCESS_TOKEN) {
+    return NextResponse.json({
+      connected: true,
+      username: "PrismaFlux (token direct)",
+      daysUntilExpiry: 999,
+      refreshExpired: false,
+      needsReauth: false,
+      mode: "env_token",
+    });
+  }
+
   if (!tokens) {
     return NextResponse.json({ connected: false });
   }
