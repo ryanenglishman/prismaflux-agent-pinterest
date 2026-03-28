@@ -1311,16 +1311,40 @@ export default function Dashboard() {
       <style>{`
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
         @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+        @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes glowPulse { 0%,100%{box-shadow:0 0 8px #e6323233} 50%{box-shadow:0 0 20px #e6323266} }
+        @keyframes borderGlow { 0%,100%{border-color:#e6323244} 50%{border-color:#e6323288} }
+        .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3) !important; }
+        .kpi-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .btn-primary:hover { filter: brightness(1.1); transform: scale(1.02); }
+        .btn-primary { transition: filter 0.15s, transform 0.15s; }
+        .tab-btn:hover { color: #e4e4e7 !important; }
+        .post-card:hover { border-color: #e6323266 !important; }
+        .post-card { transition: border-color 0.2s ease; }
+        .republish-card:hover { transform: translateY(-1px); border-color: #e6323266 !important; }
+        .republish-card { transition: transform 0.15s, border-color 0.15s; }
+        * { scrollbar-width: thin; scrollbar-color: #27272a transparent; }
+        *::-webkit-scrollbar { width: 6px; height: 6px; }
+        *::-webkit-scrollbar-track { background: transparent; }
+        *::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
       `}</style>
 
       {/* Header */}
       <header
         style={{
           borderBottom: `1px solid ${colors.border}`,
+          background: dark
+            ? "linear-gradient(180deg, #12121a 0%, #0a0a0f 100%)"
+            : "linear-gradient(180deg, #ffffff 0%, #f4f4f5 100%)",
           padding: isMobile ? "14px 16px" : "20px 32px",
           display: "flex",
           alignItems: "center",
           gap: 12,
+          position: "sticky",
+          top: 0,
+          zIndex: 50,
+          backdropFilter: "blur(12px)",
         }}
       >
         <div
@@ -1537,12 +1561,14 @@ export default function Dashboard() {
               value={String(kpiData.postsThisWeek)}
               color="#3b82f6"
               colors={colors}
+              icon="&#9670;"
             />
             <KpiCard
               label="Taux de succes"
               value={`${kpiData.successRate}%`}
               color="#22c55e"
               colors={colors}
+              icon="&#10003;"
             />
             <KpiCard
               label="Prochain post"
@@ -1927,12 +1953,15 @@ export default function Dashboard() {
             {/* Post du jour */}
             <div
               style={{
-                background: dark ? "#111113" : "#fefce8",
-                borderRadius: 12,
-                border: todayPreview ? `2px solid ${colors.accent}66` : `1px solid ${colors.accent}44`,
-                padding: isMobile ? "14px" : "16px 20px",
+                background: dark
+                  ? "linear-gradient(135deg, #111113 0%, #1a0a0a 100%)"
+                  : "linear-gradient(135deg, #fffdf5 0%, #fff5f5 100%)",
+                borderRadius: 16,
+                border: todayPreview ? `2px solid ${colors.accent}66` : `1px solid ${colors.accent}33`,
+                padding: isMobile ? "16px" : "20px 24px",
                 marginBottom: isMobile ? 16 : 20,
-                animation: todayPreview ? "pulse 1.5s infinite" : "none",
+                animation: todayPreview ? "borderGlow 3s infinite" : "none",
+                boxShadow: todayPreview ? `0 0 30px ${colors.accent}11` : "none",
               }}
             >
               <SectionTitle colors={colors} style={{ marginBottom: 10 }}>
@@ -3856,32 +3885,53 @@ function KpiCard({
   value,
   color,
   colors,
+  icon,
 }: {
   label: string;
   value: string;
   color: string;
   colors: ThemeColors;
+  icon?: string;
 }) {
   return (
     <div
+      className="kpi-card"
       style={{
-        background: colors.card,
-        borderRadius: 12,
+        background: `linear-gradient(135deg, ${colors.card} 0%, ${colors.bg} 100%)`,
+        borderRadius: 14,
         border: `1px solid ${colors.border}`,
-        padding: "14px 16px",
+        padding: "18px 20px",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
-      <p
+      <div
         style={{
-          fontSize: 12,
-          color: colors.muted,
-          margin: 0,
-          marginBottom: 4,
+          position: "absolute",
+          top: 0,
+          right: 0,
+          width: 60,
+          height: 60,
+          background: `radial-gradient(circle at top right, ${color}11, transparent)`,
+          borderRadius: "0 14px 0 0",
         }}
-      >
-        {label}
-      </p>
-      <p style={{ fontSize: 22, fontWeight: 700, margin: 0, color }}>
+      />
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+        {icon && <span style={{ fontSize: 14 }}>{icon}</span>}
+        <p
+          style={{
+            fontSize: 11,
+            color: colors.muted,
+            margin: 0,
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
+            fontWeight: 500,
+          }}
+        >
+          {label}
+        </p>
+      </div>
+      <p style={{ fontSize: 28, fontWeight: 800, margin: 0, color, letterSpacing: "-0.5px" }}>
         {value}
       </p>
     </div>
