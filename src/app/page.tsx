@@ -1315,51 +1315,61 @@ export default function Dashboard() {
         @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
         @keyframes glowPulse { 0%,100%{box-shadow:0 0 8px #e6323233} 50%{box-shadow:0 0 20px #e6323266} }
         @keyframes borderGlow { 0%,100%{border-color:#e6323244} 50%{border-color:#e6323288} }
-        .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3) !important; }
-        .kpi-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .btn-primary:hover { filter: brightness(1.1); transform: scale(1.02); }
-        .btn-primary { transition: filter 0.15s, transform 0.15s; }
-        .tab-btn:hover { color: #e4e4e7 !important; }
-        .post-card:hover { border-color: #e6323266 !important; }
-        .post-card { transition: border-color 0.2s ease; }
-        .republish-card:hover { transform: translateY(-1px); border-color: #e6323266 !important; }
-        .republish-card { transition: transform 0.15s, border-color 0.15s; }
+        @keyframes gradientShift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.35) !important; border-color: #e6323244 !important; }
+        .kpi-card { transition: all 0.25s cubic-bezier(0.4,0,0.2,1); cursor: pointer; }
+        .btn-primary:hover { filter: brightness(1.12); transform: translateY(-1px); box-shadow: 0 6px 20px #e6323244; }
+        .btn-primary { transition: all 0.2s cubic-bezier(0.4,0,0.2,1); }
+        .tab-btn:hover { color: #e4e4e7 !important; background: rgba(255,255,255,0.04) !important; }
+        .post-card:hover { border-color: #e6323255 !important; background: ${dark ? '#1a1a1f' : '#fafafa'} !important; }
+        .post-card { transition: all 0.2s ease; }
+        .republish-card:hover { transform: translateY(-2px); border-color: #e6323255 !important; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+        .republish-card { transition: all 0.2s cubic-bezier(0.4,0,0.2,1); }
+        .section-fade { animation: slideUp 0.4s ease-out both; }
+        .section-fade:nth-child(2) { animation-delay: 0.08s; }
+        .section-fade:nth-child(3) { animation-delay: 0.16s; }
+        .section-fade:nth-child(4) { animation-delay: 0.24s; }
         * { scrollbar-width: thin; scrollbar-color: #27272a transparent; }
-        *::-webkit-scrollbar { width: 6px; height: 6px; }
+        *::-webkit-scrollbar { width: 5px; height: 5px; }
         *::-webkit-scrollbar-track { background: transparent; }
-        *::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+        *::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+        *::-webkit-scrollbar-thumb:hover { background: #52525b; }
+        ::selection { background: #e6323244; color: #fff; }
       `}</style>
 
       {/* Header */}
       <header
         style={{
-          borderBottom: `1px solid ${colors.border}`,
+          borderBottom: `1px solid ${dark ? '#1a1a22' : colors.border}`,
           background: dark
-            ? "linear-gradient(180deg, #12121a 0%, #0a0a0f 100%)"
-            : "linear-gradient(180deg, #ffffff 0%, #f4f4f5 100%)",
-          padding: isMobile ? "14px 16px" : "20px 32px",
+            ? "linear-gradient(180deg, #101018 0%, #0a0a0f 100%)"
+            : "linear-gradient(180deg, #ffffff 0%, #fafafa 100%)",
+          padding: isMobile ? "16px 16px" : "16px 32px",
           display: "flex",
           alignItems: "center",
-          gap: 12,
+          gap: 14,
           position: "sticky",
           top: 0,
           zIndex: 50,
-          backdropFilter: "blur(12px)",
+          backdropFilter: "blur(16px)",
+          boxShadow: dark ? "0 1px 0 #ffffff06" : "0 1px 3px rgba(0,0,0,0.05)",
         }}
       >
         <div
           style={{
-            width: 36,
-            height: 36,
+            width: 38,
+            height: 38,
             borderRadius: 10,
-            background: "linear-gradient(135deg, #e63232, #ff4444)",
+            background: "linear-gradient(135deg, #e63232 0%, #cc1a1a 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             fontSize: 18,
-            fontWeight: 700,
-            color: "#0a0a0f",
+            fontWeight: 800,
+            color: "#ffffff",
             flexShrink: 0,
+            boxShadow: "0 2px 8px #e6323233",
+            letterSpacing: "-0.5px",
           }}
         >
           P
@@ -1367,15 +1377,16 @@ export default function Dashboard() {
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1
             style={{
-              fontSize: isMobile ? 16 : 18,
-              fontWeight: 600,
+              fontSize: isMobile ? 15 : 17,
+              fontWeight: 700,
               margin: 0,
               color: colors.text,
+              letterSpacing: "-0.3px",
             }}
           >
-            PrismaFlux — Agent Pinterest
+            PrismaFlux <span style={{ color: colors.muted, fontWeight: 400 }}>|</span> Agent Pinterest
           </h1>
-          <p style={{ fontSize: 13, color: colors.muted, margin: 0 }}>
+          <p style={{ fontSize: 12, color: colors.muted, margin: "2px 0 0", letterSpacing: "0.2px" }}>
             Publication automatique multi-plateformes
           </p>
         </div>
@@ -1497,34 +1508,41 @@ export default function Dashboard() {
       {/* Tab Navigation */}
       <nav
         style={{
-          borderBottom: `1px solid ${colors.border}`,
-          padding: isMobile ? "0 8px" : "0 32px",
+          borderBottom: `1px solid ${dark ? '#1a1a22' : colors.border}`,
+          padding: isMobile ? "0 12px" : "0 32px",
           display: "flex",
-          gap: 0,
+          gap: isMobile ? 0 : 2,
           overflowX: isMobile ? "auto" : "visible",
           WebkitOverflowScrolling: "touch",
+          background: dark ? "#0c0c14" : "#fafafa",
         }}
       >
         {TAB_LIST.map((tab) => (
           <button
             key={tab.key}
+            className="tab-btn"
             onClick={() => setActiveTab(tab.key)}
             style={{
-              background: "transparent",
+              background: activeTab === tab.key
+                ? (dark ? "rgba(230,50,50,0.08)" : "rgba(230,50,50,0.06)")
+                : "transparent",
               border: "none",
               borderBottom:
                 activeTab === tab.key
                   ? `2px solid ${colors.accent}`
                   : "2px solid transparent",
               color: activeTab === tab.key ? colors.accent : colors.muted,
-              padding: isMobile ? "12px 14px" : "14px 24px",
-              fontSize: isMobile ? 13 : 14,
-              fontWeight: activeTab === tab.key ? 600 : 500,
+              padding: isMobile ? "13px 14px" : "14px 22px",
+              fontSize: isMobile ? 12 : 13,
+              fontWeight: activeTab === tab.key ? 700 : 500,
               cursor: "pointer",
-              transition: "all 0.15s",
+              transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
               fontFamily: "inherit",
               whiteSpace: "nowrap",
               flexShrink: 0,
+              textTransform: "uppercase",
+              letterSpacing: "0.6px",
+              borderRadius: "6px 6px 0 0",
             }}
           >
             {tab.label}
@@ -1536,15 +1554,13 @@ export default function Dashboard() {
         style={{
           maxWidth: 1100,
           margin: "0 auto",
-          padding: `${padding}px ${isMobile ? 12 : 24}px`,
+          padding: `${isMobile ? 20 : 28}px ${isMobile ? 14 : 28}px`,
         }}
       >
-        {/* Auth banner moved inside Publications tab only */}
-
         {/* ================================================================= */}
-        {/* KPI Dashboard (always visible above tabs)                         */}
+        {/* KPI Dashboard                                                     */}
         {/* ================================================================= */}
-        <section style={{ marginBottom: isMobile ? 16 : 24 }}>
+        <section className="section-fade" style={{ marginBottom: isMobile ? 20 : 28 }}>
           <div
             onClick={() => setKpiExpanded(!kpiExpanded)}
             style={{
@@ -1552,7 +1568,7 @@ export default function Dashboard() {
               gridTemplateColumns: isMobile
                 ? "1fr 1fr"
                 : "repeat(4, 1fr)",
-              gap: isMobile ? 8 : 16,
+              gap: isMobile ? 10 : 14,
               cursor: "pointer",
             }}
           >
@@ -3897,10 +3913,10 @@ function KpiCard({
     <div
       className="kpi-card"
       style={{
-        background: `linear-gradient(135deg, ${colors.card} 0%, ${colors.bg} 100%)`,
-        borderRadius: 14,
+        background: colors.card,
+        borderRadius: 16,
         border: `1px solid ${colors.border}`,
-        padding: "18px 20px",
+        padding: "20px 20px 18px",
         position: "relative",
         overflow: "hidden",
       }}
@@ -3908,30 +3924,35 @@ function KpiCard({
       <div
         style={{
           position: "absolute",
-          top: 0,
-          right: 0,
-          width: 60,
-          height: 60,
-          background: `radial-gradient(circle at top right, ${color}11, transparent)`,
-          borderRadius: "0 14px 0 0",
+          bottom: -20,
+          right: -20,
+          width: 80,
+          height: 80,
+          background: `radial-gradient(circle, ${color}0d, transparent 70%)`,
+          pointerEvents: "none",
         }}
       />
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-        {icon && <span style={{ fontSize: 14 }}>{icon}</span>}
-        <p
-          style={{
-            fontSize: 11,
-            color: colors.muted,
-            margin: 0,
-            textTransform: "uppercase",
-            letterSpacing: "0.5px",
-            fontWeight: 500,
-          }}
-        >
-          {label}
-        </p>
-      </div>
-      <p style={{ fontSize: 28, fontWeight: 800, margin: 0, color, letterSpacing: "-0.5px" }}>
+      <p
+        style={{
+          fontSize: 10,
+          color: colors.muted,
+          margin: "0 0 10px",
+          textTransform: "uppercase",
+          letterSpacing: "1px",
+          fontWeight: 600,
+        }}
+      >
+        {icon && <span style={{ marginRight: 5, fontSize: 11 }}>{icon}</span>}
+        {label}
+      </p>
+      <p style={{
+        fontSize: 32,
+        fontWeight: 800,
+        margin: 0,
+        color,
+        letterSpacing: "-1px",
+        lineHeight: 1,
+      }}>
         {value}
       </p>
     </div>
