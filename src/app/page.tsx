@@ -1340,36 +1340,32 @@ export default function Dashboard() {
       {/* Header */}
       <header
         style={{
-          borderBottom: `1px solid ${dark ? '#1a1a22' : colors.border}`,
-          background: dark
-            ? "linear-gradient(180deg, #101018 0%, #0a0a0f 100%)"
-            : "linear-gradient(180deg, #ffffff 0%, #fafafa 100%)",
-          padding: isMobile ? "16px 16px" : "16px 32px",
+          borderBottom: `1px solid ${dark ? '#ffffff08' : '#e4e4e7'}`,
+          background: dark ? "rgba(10,10,15,0.85)" : "rgba(255,255,255,0.9)",
+          padding: isMobile ? "12px 16px" : "14px 32px",
           display: "flex",
           alignItems: "center",
-          gap: 14,
+          gap: 12,
           position: "sticky",
           top: 0,
           zIndex: 50,
-          backdropFilter: "blur(16px)",
-          boxShadow: dark ? "0 1px 0 #ffffff06" : "0 1px 3px rgba(0,0,0,0.05)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
         }}
       >
         <div
           style={{
-            width: 38,
-            height: 38,
-            borderRadius: 10,
-            background: "linear-gradient(135deg, #e63232 0%, #cc1a1a 100%)",
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            background: colors.accent,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: 800,
-            color: "#ffffff",
+            color: "#fff",
             flexShrink: 0,
-            boxShadow: "0 2px 8px #e6323233",
-            letterSpacing: "-0.5px",
           }}
         >
           P
@@ -1377,18 +1373,15 @@ export default function Dashboard() {
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1
             style={{
-              fontSize: isMobile ? 15 : 17,
-              fontWeight: 700,
+              fontSize: isMobile ? 14 : 15,
+              fontWeight: 600,
               margin: 0,
               color: colors.text,
-              letterSpacing: "-0.3px",
+              letterSpacing: "-0.2px",
             }}
           >
-            PrismaFlux <span style={{ color: colors.muted, fontWeight: 400 }}>|</span> Agent Pinterest
+            PrismaFlux
           </h1>
-          <p style={{ fontSize: 12, color: colors.muted, margin: "2px 0 0", letterSpacing: "0.2px" }}>
-            Publication automatique multi-plateformes
-          </p>
         </div>
 
         {/* Auth indicator in header */}
@@ -1508,13 +1501,12 @@ export default function Dashboard() {
       {/* Tab Navigation */}
       <nav
         style={{
-          borderBottom: `1px solid ${dark ? '#1a1a22' : colors.border}`,
-          padding: isMobile ? "0 12px" : "0 32px",
+          borderBottom: `1px solid ${dark ? '#ffffff08' : '#e4e4e7'}`,
+          padding: isMobile ? "0 16px" : "0 32px",
           display: "flex",
-          gap: isMobile ? 0 : 2,
+          gap: 1,
           overflowX: isMobile ? "auto" : "visible",
           WebkitOverflowScrolling: "touch",
-          background: dark ? "#0c0c14" : "#fafafa",
         }}
       >
         {TAB_LIST.map((tab) => (
@@ -1523,26 +1515,23 @@ export default function Dashboard() {
             className="tab-btn"
             onClick={() => setActiveTab(tab.key)}
             style={{
-              background: activeTab === tab.key
-                ? (dark ? "rgba(230,50,50,0.08)" : "rgba(230,50,50,0.06)")
-                : "transparent",
+              background: "transparent",
               border: "none",
               borderBottom:
                 activeTab === tab.key
                   ? `2px solid ${colors.accent}`
                   : "2px solid transparent",
-              color: activeTab === tab.key ? colors.accent : colors.muted,
-              padding: isMobile ? "13px 14px" : "14px 22px",
-              fontSize: isMobile ? 12 : 13,
-              fontWeight: activeTab === tab.key ? 700 : 500,
+              color: activeTab === tab.key ? colors.text : colors.muted,
+              padding: isMobile ? "12px 12px" : "13px 20px",
+              fontSize: isMobile ? 11 : 12,
+              fontWeight: activeTab === tab.key ? 600 : 400,
               cursor: "pointer",
-              transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
+              transition: "all 0.15s ease",
               fontFamily: "inherit",
               whiteSpace: "nowrap",
               flexShrink: 0,
               textTransform: "uppercase",
-              letterSpacing: "0.6px",
-              borderRadius: "6px 6px 0 0",
+              letterSpacing: "0.8px",
             }}
           >
             {tab.label}
@@ -1552,42 +1541,42 @@ export default function Dashboard() {
 
       <main
         style={{
-          maxWidth: 1100,
+          maxWidth: 960,
           margin: "0 auto",
-          padding: `${isMobile ? 20 : 28}px ${isMobile ? 14 : 28}px`,
+          padding: `${isMobile ? 20 : 32}px ${isMobile ? 16 : 32}px`,
         }}
       >
         {/* ================================================================= */}
         {/* KPI Dashboard                                                     */}
         {/* ================================================================= */}
-        <section className="section-fade" style={{ marginBottom: isMobile ? 20 : 28 }}>
+        <section className="section-fade" style={{ marginBottom: isMobile ? 24 : 32 }}>
           <div
             onClick={() => setKpiExpanded(!kpiExpanded)}
             style={{
               display: "grid",
               gridTemplateColumns: isMobile
                 ? "1fr 1fr"
-                : "repeat(4, 1fr)",
-              gap: isMobile ? 10 : 14,
+                : "1.4fr 1fr 1fr 1fr",
+              gap: isMobile ? 10 : 12,
               cursor: "pointer",
             }}
           >
             <KpiCard
-              label="Posts cette semaine"
+              label="Cette semaine"
               value={String(kpiData.postsThisWeek)}
+              subtitle="publications"
               color="#3b82f6"
               colors={colors}
-              icon="&#9670;"
+              large={!isMobile}
             />
             <KpiCard
-              label="Taux de succes"
+              label="Succes"
               value={`${kpiData.successRate}%`}
               color="#22c55e"
               colors={colors}
-              icon="&#10003;"
             />
             <KpiCard
-              label="Prochain post"
+              label="Prochain"
               value={
                 kpiData.nextPost
                   ? timeUntil(kpiData.nextPost.scheduledFor)
@@ -1597,7 +1586,7 @@ export default function Dashboard() {
               colors={colors}
             />
             <KpiCard
-              label="Posts en attente"
+              label="En attente"
               value={String(kpiData.pendingCount)}
               color="#ff4444"
               colors={colors}
@@ -3901,60 +3890,60 @@ function KpiCard({
   value,
   color,
   colors,
-  icon,
+  large,
+  subtitle,
 }: {
   label: string;
   value: string;
   color: string;
   colors: ThemeColors;
   icon?: string;
+  large?: boolean;
+  subtitle?: string;
 }) {
   return (
     <div
       className="kpi-card"
       style={{
         background: colors.card,
-        borderRadius: 16,
+        borderRadius: 14,
         border: `1px solid ${colors.border}`,
-        padding: "20px 20px 18px",
+        borderLeft: `3px solid ${color}`,
+        padding: large ? "24px 24px 20px" : "16px 18px 14px",
         position: "relative",
         overflow: "hidden",
+        gridRow: large ? "span 1" : undefined,
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          bottom: -20,
-          right: -20,
-          width: 80,
-          height: 80,
-          background: `radial-gradient(circle, ${color}0d, transparent 70%)`,
-          pointerEvents: "none",
-        }}
-      />
       <p
         style={{
           fontSize: 10,
           color: colors.muted,
-          margin: "0 0 10px",
+          margin: "0 0 8px",
           textTransform: "uppercase",
-          letterSpacing: "1px",
+          letterSpacing: "1.2px",
           fontWeight: 600,
         }}
       >
-        {icon && <span style={{ marginRight: 5, fontSize: 11 }}>{icon}</span>}
         {label}
       </p>
-      <p style={{
-        fontSize: 32,
-        fontWeight: 800,
-        margin: 0,
-        color,
-        letterSpacing: "-1px",
-        lineHeight: 1,
-      }}>
-        {value}
-      </p>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+        <p style={{
+          fontSize: large ? 40 : 28,
+          fontWeight: 800,
+          margin: 0,
+          color,
+          letterSpacing: "-1px",
+          lineHeight: 1,
+        }}>
+          {value}
+        </p>
+        {subtitle && (
+          <span style={{ fontSize: 13, color: colors.muted, fontWeight: 500 }}>
+            {subtitle}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
