@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Geist } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -132,6 +133,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen antialiased">{children}</body>
+      <GoogleAnalytics gaId="G-XHPGBP78SK" />
     </html>
   );
 }
