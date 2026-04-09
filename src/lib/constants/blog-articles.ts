@@ -18,7 +18,7 @@ export const blogArticles: BlogArticle[] = [
     excerpt:
       "D\u00e9couvrez les \u00e9tapes concr\u00e8tes pour positionner votre entreprise li\u00e9geoise en t\u00eate des r\u00e9sultats Google. SEO local, Google Business Profile et strat\u00e9gie de contenu : tout ce qu\u2019il faut savoir.",
     category: "seo",
-    publishedAt: "2026-03-01",
+    publishedAt: "2026-01-08",
     readingTime: "8 min de lecture",
     metaTitle:
       "Comment \u00eatre premier sur Google \u00e0 Li\u00e8ge en 2026 | PrismaFlux",
@@ -73,7 +73,7 @@ export const blogArticles: BlogArticle[] = [
     excerpt:
       "Site vitrine, e-commerce ou landing page : d\u00e9couvrez les fourchettes de prix r\u00e9alistes pour un site web professionnel en Belgique et les facteurs qui influencent le co\u00fbt.",
     category: "web-design",
-    publishedAt: "2026-03-03",
+    publishedAt: "2026-01-14",
     readingTime: "9 min de lecture",
     metaTitle:
       "Combien co\u00fbte un site web professionnel en Belgique ? | PrismaFlux",
@@ -142,7 +142,7 @@ export const blogArticles: BlogArticle[] = [
     excerpt:
       "Ma\u00eetrisez le SEO local pour attirer plus de clients dans votre zone de chalandise. Google Business Profile, citations locales, avis et strat\u00e9gie de contenu : le guide complet pour Li\u00e8ge.",
     category: "local",
-    publishedAt: "2026-03-05",
+    publishedAt: "2026-01-20",
     readingTime: "10 min de lecture",
     metaTitle:
       "SEO local Li\u00e8ge : guide complet pour les entreprises | PrismaFlux",
@@ -224,7 +224,7 @@ export const blogArticles: BlogArticle[] = [
     excerpt:
       "D\u00e9couvrez les 7 erreurs SEO les plus fr\u00e9quentes chez les PME li\u00e9geoises et comment les corriger pour am\u00e9liorer votre visibilit\u00e9 en ligne.",
     category: "seo",
-    publishedAt: "2026-03-07",
+    publishedAt: "2026-01-24",
     readingTime: "7 min de lecture",
     metaTitle:
       "7 erreurs SEO des PME en province de Li\u00e8ge | PrismaFlux",
@@ -282,7 +282,7 @@ export const blogArticles: BlogArticle[] = [
     excerpt:
       "Un guide pas \u00e0 pas pour les PME qui veulent se lancer dans le marketing digital. Site web, SEO, r\u00e9seaux sociaux, publicit\u00e9 : dans quel ordre investir ?",
     category: "marketing-digital",
-    publishedAt: "2026-03-10",
+    publishedAt: "2026-01-28",
     readingTime: "8 min de lecture",
     metaTitle:
       "Marketing digital pour PME : par o\u00f9 commencer ? | PrismaFlux",
@@ -364,7 +364,7 @@ export const blogArticles: BlogArticle[] = [
     excerpt:
       "Faut-il investir dans Google Ads ou dans le r\u00e9f\u00e9rencement naturel ? Comparaison compl\u00e8te : co\u00fbts, d\u00e9lais, ROI et strat\u00e9gie combin\u00e9e pour les PME belges.",
     category: "marketing-digital",
-    publishedAt: "2026-03-12",
+    publishedAt: "2026-01-31",
     readingTime: "8 min de lecture",
     metaTitle:
       "Google Ads vs SEO : comparaison compl\u00e8te pour PME | PrismaFlux",
@@ -446,7 +446,7 @@ export const blogArticles: BlogArticle[] = [
     excerpt:
       "D\u00e9couvrez comment l\u2019IA transforme le marketing digital en 2026. Applications concr\u00e8tes, outils et impact pour les agences et PME.",
     category: "ia",
-    publishedAt: "2026-03-15",
+    publishedAt: "2026-02-04",
     readingTime: "9 min de lecture",
     metaTitle:
       "IA et marketing digital : applications concr\u00e8tes en 2026 | PrismaFlux",
@@ -533,7 +533,7 @@ export const blogArticles: BlogArticle[] = [
     excerpt:
       "Votre site est en ligne mais ne g\u00e9n\u00e8re aucun contact ? D\u00e9couvrez les raisons les plus fr\u00e9quentes et les solutions concr\u00e8tes pour transformer votre site en machine \u00e0 prospects.",
     category: "web-design",
-    publishedAt: "2026-03-17",
+    publishedAt: "2026-02-10",
     readingTime: "8 min de lecture",
     metaTitle:
       "Pourquoi votre site ne g\u00e9n\u00e8re pas de clients | PrismaFlux",
@@ -603,7 +603,7 @@ export const blogArticles: BlogArticle[] = [
     excerpt:
       "Quels r\u00e9seaux sociaux choisir pour votre entreprise ? Strat\u00e9gie de contenu, fr\u00e9quence de publication, paid vs organic et mesure du ROI : le guide complet.",
     category: "marketing-digital",
-    publishedAt: "2026-03-20",
+    publishedAt: "2026-02-14",
     readingTime: "9 min de lecture",
     metaTitle:
       "R\u00e9seaux sociaux entreprises : guide pratique 2026 | PrismaFlux",
@@ -691,7 +691,7 @@ export const blogArticles: BlogArticle[] = [
     excerpt:
       "Votre site a pris un coup de vieux ? D\u00e9couvrez les signes qui indiquent qu\u2019il est temps de refaire votre site, le processus de refonte, les co\u00fbts et le calendrier.",
     category: "web-design",
-    publishedAt: "2026-03-24",
+    publishedAt: "2026-02-18",
     readingTime: "8 min de lecture",
     metaTitle:
       "Refonte de site web : quand et pourquoi refaire son site | PrismaFlux",
@@ -784,7 +784,7 @@ export const blogArticles: BlogArticle[] = [
     excerpt:
       "Votre fiche Google Business Profile est la vitrine la plus vue de votre entreprise à Liège. Découvrez comment l'optimiser pour apparaître dans le pack local, gérer vos avis et attirer plus de clients.",
     category: "local",
-    publishedAt: "2026-04-01",
+    publishedAt: "2026-02-21",
     readingTime: "10 min de lecture",
     metaTitle: "Google Business Profile Liège : guide complet d'optimisation | PrismaFlux",
     metaDescription:
@@ -841,7 +841,7 @@ export const blogArticles: BlogArticle[] = [
     excerpt:
       "Prix, portfolio, technologie, transparence, suivi SEO... Tous les critères pour ne pas se tromper dans le choix de votre prestataire web en province de Liège.",
     category: "web-design",
-    publishedAt: "2026-04-02",
+    publishedAt: "2026-02-25",
     readingTime: "8 min de lecture",
     metaTitle: "Comment choisir son agence web à Liège ? Les vrais critères | PrismaFlux",
     metaDescription:
@@ -903,7 +903,7 @@ export const blogArticles: BlogArticle[] = [
     excerpt:
       "Intelligence artificielle, vidéo courte, recherche vocale, SGE Google... Les tendances qui redessinent le marketing digital en province de Liège et comment les exploiter concrètement.",
     category: "marketing-digital",
-    publishedAt: "2026-04-03",
+    publishedAt: "2026-02-28",
     readingTime: "11 min de lecture",
     metaTitle: "Marketing digital Liège 2026 : 7 tendances à saisir | PrismaFlux",
     metaDescription:
@@ -952,7 +952,7 @@ export const blogArticles: BlogArticle[] = [
     title: "Le prompt engineering : la compétence invisible qui sépare les amateurs des professionnels du web",
     excerpt: "Derrière chaque livrable IA de qualité, il y a une intelligence humaine structurée. Le prompting professionnel n'est pas un raccourci — c'est une discipline à part entière que la plupart des agences ne maîtrisent pas encore.",
     category: "ia",
-    publishedAt: "2026-04-07",
+    publishedAt: "2026-03-04",
     readingTime: "9 min de lecture",
     metaTitle: "Prompt engineering agence web : la compétence clé de 2026 | PrismaFlux",
     metaDescription: "Pourquoi le prompt engineering est devenu la compétence la plus stratégique en création de sites web. Ce que les pros font différemment des amateurs avec l'IA.",
@@ -1003,7 +1003,7 @@ export const blogArticles: BlogArticle[] = [
     title: "Pourquoi le brief créatif est devenu l'atout SEO numéro 1 des agences en 2026",
     excerpt: "Le brief créatif a toujours existé. Mais depuis que l'IA l'a transformé en moteur de production, les agences qui savent structurer leurs instructions obtiennent des résultats SEO que les autres n'expliquent pas.",
     category: "ia",
-    publishedAt: "2026-04-09",
+    publishedAt: "2026-03-08",
     readingTime: "8 min de lecture",
     metaTitle: "Brief créatif IA et SEO : la méthode des agences performantes en 2026 | PrismaFlux",
     metaDescription: "Comment un brief créatif structuré devient le moteur d'une stratégie SEO gagnante avec l'IA. La méthode concrète des agences qui produisent du contenu qui ranke.",
@@ -1047,7 +1047,7 @@ export const blogArticles: BlogArticle[] = [
     title: "L'IA rédige. L'expertise décide. Ce que vos concurrents n'ont pas encore compris",
     excerpt: "L'accès à un outil IA ne suffit pas à produire du contenu web qui performe. La vraie valeur ajoutée est invisible : c'est la qualité de la pensée stratégique qui précède chaque ligne générée.",
     category: "ia",
-    publishedAt: "2026-04-11",
+    publishedAt: "2026-03-13",
     readingTime: "7 min de lecture",
     metaTitle: "IA et expertise humaine en marketing digital : qui décide vraiment ? | PrismaFlux",
     metaDescription: "Pourquoi l'IA seule ne produit pas de résultats SEO durables. La compétence humaine derrière le prompting, ce que les meilleures agences web ne partagent pas.",
@@ -1087,7 +1087,7 @@ export const blogArticles: BlogArticle[] = [
     title: "Ce que coûte vraiment implémenter l'IA dans un process de création web : la réalité des chiffres en 2026",
     excerpt: "L'IA dans la création de sites web n'est pas une baguette magique. C'est un investissement calculé, avec des coûts réels, des courbes d'apprentissage, et un retour sur investissement qui ne se mesure pas en semaines.",
     category: "ia",
-    publishedAt: "2026-04-12",
+    publishedAt: "2026-03-18",
     readingTime: "10 min de lecture",
     metaTitle: "Coût réel de l'IA en création web 2026 : chiffres et réalité | PrismaFlux",
     metaDescription: "Analyse complète des coûts d'implémentation de l'IA dans un process de création web. Abonnements, formation, temps d'intégration : ce que les éditeurs ne vous disent pas.",
@@ -1129,7 +1129,7 @@ export const blogArticles: BlogArticle[] = [
     title: "Wix, Webflow, Squarespace : 7 limitations techniques réelles qui plombent votre SEO",
     excerpt: "Analyse critique et factuelle des éditeurs visuels les plus populaires. Pas de théorie : des tests de performance, des audits SEO réels et des chiffres mesurables qui expliquent pourquoi ces plateformes ont des plafonds structurels.",
     category: "web-design",
-    publishedAt: "2026-04-13",
+    publishedAt: "2026-03-22",
     readingTime: "11 min de lecture",
     metaTitle: "Wix Webflow Squarespace SEO : les vraies limitations en 2026 | PrismaFlux",
     metaDescription: "Analyse critique des limites SEO réelles de Wix, Webflow et Squarespace. Tests de performance, audits techniques et alternatives pour les entreprises qui veulent ranker.",
@@ -1178,7 +1178,7 @@ export const blogArticles: BlogArticle[] = [
     title: "Core Web Vitals 2026 : pourquoi les éditeurs visuels structurellement échouent — et ce que ça vous coûte vraiment",
     excerpt: "Google a fait des Core Web Vitals un facteur de classement officiel. Les données de terrain montrent que les éditeurs no-code comme Wix et Squarespace obtiennent systématiquement des scores inférieurs aux sites custom. Voici les chiffres et les raisons techniques.",
     category: "web-design",
-    publishedAt: "2026-04-14",
+    publishedAt: "2026-03-26",
     readingTime: "10 min de lecture",
     metaTitle: "Core Web Vitals Wix vs site custom 2026 : comparaison réelle | PrismaFlux",
     metaDescription: "Comparaison factuelle des scores Core Web Vitals entre éditeurs visuels (Wix, Squarespace, Webflow) et développement custom. Impact SEO réel et chiffres mesurables.",
@@ -1229,7 +1229,7 @@ export const blogArticles: BlogArticle[] = [
     title: "950 € et 8 heures : le détail complet de ce qu'une mission PrismaFlux produit réellement",
     excerpt: "Transparence totale sur notre process. Voici, heure par heure, ce qui se passe quand une PME nous confie une mission à 950 €. Aucune ligne floue, aucun livrable vague : le détail de ce que vous obtenez.",
     category: "web-design",
-    publishedAt: "2026-04-15",
+    publishedAt: "2026-03-31",
     readingTime: "8 min de lecture",
     metaTitle: "Mission web à 950€ chez PrismaFlux : ce que vous obtenez vraiment | PrismaFlux",
     metaDescription: "Détail complet heure par heure d'une mission web PrismaFlux à 950€. Livrables, processus, résultats attendus : tout ce que les autres agences ne montrent pas.",
@@ -1277,7 +1277,7 @@ export const blogArticles: BlogArticle[] = [
     title: "Landing page haute conversion en 5 heures : méthode, structure et ce que chaque section accomplit",
     excerpt: "Une landing page qui convertit n'est pas un exercice de style. C'est une architecture psychologique précise. Voici la méthode que nous appliquons en 5 heures pour produire des pages qui transforment des visiteurs en prospects qualifiés.",
     category: "marketing-digital",
-    publishedAt: "2026-04-16",
+    publishedAt: "2026-04-02",
     readingTime: "9 min de lecture",
     metaTitle: "Landing page conversion en 5 heures : méthode complète | PrismaFlux Liège",
     metaDescription: "La méthode PrismaFlux pour créer une landing page haute conversion en 5 heures. Structure, copywriting, CTA et optimisation : tout le process détaillé.",
@@ -1325,7 +1325,7 @@ export const blogArticles: BlogArticle[] = [
     title: "Audit SEO + refonte complète en 10 heures : ce qu'une PME de province obtient et pourquoi ça fonctionne",
     excerpt: "Dix heures de travail expert ciblé produisent plus qu'une refonte généraliste de 40 heures. La clé : un diagnostic précis qui concentre l'effort là où le levier est le plus fort.",
     category: "seo",
-    publishedAt: "2026-04-17",
+    publishedAt: "2026-04-04",
     readingTime: "9 min de lecture",
     metaTitle: "Audit SEO + refonte site en 10 heures pour PME : méthode complète | PrismaFlux",
     metaDescription: "Comment PrismaFlux réalise un audit SEO complet et une refonte ciblée en 10 heures pour les PME de la province de Liège. Méthode, livrables et résultats.",
@@ -1377,7 +1377,7 @@ export const blogArticles: BlogArticle[] = [
     title: "Identité visuelle + kit social media complet en 15 heures : tout ce que ça inclut et pourquoi c'est suffisant",
     excerpt: "En 15 heures de travail concentré, une PME peut disposer d'une identité visuelle cohérente et d'un kit social media opérationnel pour 3 mois. Voici ce que ça signifie concrètement — et pourquoi la plupart des agences prennent 3 fois plus de temps pour la moitié du résultat.",
     category: "marketing-digital",
-    publishedAt: "2026-04-18",
+    publishedAt: "2026-04-06",
     readingTime: "8 min de lecture",
     metaTitle: "Identité visuelle + kit social media en 15 heures : contenu complet | PrismaFlux Liège",
     metaDescription: "Ce qu'inclut une mission identité visuelle + social media kit de 15 heures chez PrismaFlux. Livrables, formats, stratégie 3 mois et processus détaillé.",
@@ -1420,7 +1420,7 @@ export const blogArticles: BlogArticle[] = [
     title: "Gutenberg, Divi, Elementor : autopsie technique des limites que les éditeurs visuels n'ont jamais résolues — et comment l'IA change la donne",
     excerpt: "Analyse d'expert des problèmes de code structurels auxquels ont été confrontés les développeurs de Gutenberg, Divi et Elementor. Et pourquoi l'éditeur visuel du futur, dopé à l'IA, sera fondamentalement différent pour l'utilisateur.",
     category: "ia",
-    publishedAt: "2026-04-19",
+    publishedAt: "2026-04-08",
     readingTime: "18 min de lecture",
     metaTitle: "Limites techniques Gutenberg Divi Elementor : analyse complète + éditeur IA du futur | CWA",
     metaDescription: "Analyse technique exhaustive des limites de code de Gutenberg, Divi et Elementor. Problèmes de DOM, CSS, performance et sérialisation — et comment l'éditeur visuel IA de CWA les résout.",
@@ -1537,7 +1537,7 @@ export const blogArticles: BlogArticle[] = [
     title: "Ce que sera l'agence de développement web du futur — et pourquoi la plupart des agences actuelles n'y survivront pas",
     excerpt: "L'agence web de 2030 ne ressemblera en rien à celle de 2020. L'IA, les éditeurs visuels intelligents et la compression radicale des délais de production redéfinissent le métier. Voici ce qui change, qui disparaît, et ce qui émerge.",
     category: "ia",
-    publishedAt: "2026-04-20",
+    publishedAt: "2026-04-09",
     readingTime: "14 min de lecture",
     metaTitle: "L'agence web du futur : IA, éditeurs visuels, nouveau modèle | CWA",
     metaDescription: "Comment l'IA et les éditeurs visuels intelligents transforment les agences web. Nouveau modèle économique, compétences requises et ce que ça change pour les clients.",
