@@ -42,9 +42,6 @@ export const metadata: Metadata = {
   authors: [{ name: "PrismaFlux" }],
   creator: "PrismaFlux",
   metadataBase: new URL("https://prismaflux.com"),
-  alternates: {
-    canonical: "/",
-  },
   openGraph: {
     type: "website",
     locale: "fr_BE",

@@ -1,9 +1,3 @@
 {
-  "crons": [
-    {
-      "path": "/api/marketing/pinterest/generate",
-      "schedule": "0 16 * * *"
-    }
-  ]
+  "framework": "nextjs"
 }
-
